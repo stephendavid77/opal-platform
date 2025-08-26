@@ -11,6 +11,10 @@ from sqlalchemy.orm import Session
 
 from shared.database_base.database import get_db
 from shared.database_base.models.user import User, pwd_context
+from shared.common.otp.otp_manager import generate_otp as otp_generate_code, validate_otp as otp_validate_code
+from shared.common.otp.email_sender import EmailOTPSender
+
+otp_sender = EmailOTPSender() # Instantiate the OTP sender
 
 # --- JWT Configuration ---
 SECRET_KEY = os.getenv("SECRET_KEY", "super-secret-key")

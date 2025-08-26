@@ -1,23 +1,31 @@
-from datetime import datetime, timedelta
 from typing import Optional
 
 from auth_service.utils.email_sender import send_email
 from auth_service.utils.otp_generator import generate_otp
+from .otp_store_interface import OTPStoreInterface
+from .redis_otp_store import RedisOTPStore
 
-# --- OTP Configuration (PLACEHOLDERS - MOVE TO CONFIGURATION) ---
-OTP_EXPIRE_MINUTES = 5
+# --- OTP Configuration (MOVE TO A SECURE CONFIGURATION SYSTEM) ---
+OTP_EXPIRE_MINUTES = 10
+OTP_STORE = "redis"  # Can be 'redis', 'in_memory', etc.
 # -----------------------------------------------------------------
 
-# In a real application, OTPs would be stored in Redis or a similar fast key-value store.
-# For this example, we'll simulate it with a dictionary (NOT FOR PRODUCTION).
-_otp_store = {}
+def get_otp_store() -> OTPStoreInterface:
+    """Factory function to get the configured OTP store."""
+    if OTP_STORE == "redis":
+        return RedisOTPStore()
+    # Add other store implementations here
+    # elif OTP_STORE == "in_memory":
+    #     return InMemoryOTPStore()
+    else:
+        raise ValueError(f"Unknown OTP store: {OTP_STORE}")
+
+otp_store = get_otp_store()
 
 
 async def generate_and_send_otp(email: str) -> Optional[str]:
     otp_code = generate_otp()
-    expires_at = datetime.utcnow() + timedelta(minutes=OTP_EXPIRE_MINUTES)
-
-    _otp_store[email] = {"code": otp_code, "expires_at": expires_at}
+    await otp_store.store_otp(email, otp_code)
 
     subject = "Your OpalSuite OTP Code"
     body = f"Your One-Time Password (OTP) is: {otp_code}. It is valid for {OTP_EXPIRE_MINUTES} minutes."
@@ -31,12 +39,4 @@ async def generate_and_send_otp(email: str) -> Optional[str]:
 
 
 async def verify_otp(email: str, otp_code: str) -> bool:
-    stored_otp = _otp_store.get(email)
-    if not stored_otp:
-        return False
-
-    if stored_otp["code"] == otp_code and stored_otp["expires_at"] > datetime.utcnow():
-        del _otp_store[email]  # OTP consumed
-        return True
-    else:
-        return False
+    return await otp_store.verify_otp(email, otp_code)

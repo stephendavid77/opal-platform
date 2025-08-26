@@ -1,7 +1,7 @@
 import uuid
 
 from passlib.context import CryptContext
-from sqlalchemy import Column, Enum, String
+from sqlalchemy import Column, Enum, String, DateTime
 from sqlalchemy.dialects.postgresql import (  # Although using SQLite, keep for future compatibility
     UUID,
 )
@@ -30,6 +30,8 @@ class User(Base):
         Enum("user", "super_user", name="user_role"), default="user", nullable=False
     )
     refresh_token = Column(String(256), nullable=True)  # Store hashed refresh token
+    otp_code = Column(String(6), nullable=True)
+    otp_expiry = Column(DateTime, nullable=True)
 
     def set_password(self, password):
         self.hashed_password = pwd_context.hash(password)

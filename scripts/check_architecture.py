@@ -1,5 +1,6 @@
 import os
 import sys
+import ast
 
 
 def find_files(root_dir, extensions):
@@ -19,9 +20,36 @@ def find_files(root_dir, extensions):
     return found_files
 
 
+def check_for_direct_redis_imports():
+    """Checks for direct imports of the 'redis' library in the auth_service."""
+    violations = []
+    auth_service_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'auth_service'))
+    allowed_redis_import = os.path.join(auth_service_root, 'adapters', 'redis_otp_store.py')
+
+    for subdir, _, files in os.walk(auth_service_root):
+        for file in files:
+            if file.endswith('.py'):
+                file_path = os.path.join(subdir, file)
+                if file_path == allowed_redis_import:
+                    continue
+
+                with open(file_path, 'r') as f:
+                    try:
+                        tree = ast.parse(f.read(), filename=file_path)
+                        for node in ast.walk(tree):
+                            if isinstance(node, ast.Import) and any(alias.name == 'redis' for alias in node.names):
+                                violations.append(f"Violation in {file_path}: Direct 'redis' import found. Please use the OTP store interface.")
+                            elif isinstance(node, ast.ImportFrom) and node.module == 'redis':
+                                violations.append(f"Violation in {file_path}: Direct 'from redis import ...' found. Please use the OTP store interface.")
+                    except Exception as e:
+                        print(f"Error parsing {file_path}: {e}")
+    return violations
+
+
 def check_architecture():
     """Enforces architecture rules for the monorepo."""
     repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    violations = []
 
     # --- Authentication Module Check ---
     auth_modules = []
@@ -59,16 +87,9 @@ def check_architecture():
     auth_modules = [m for m in auth_modules if m not in AUTH_EXCEPTIONS]
 
     if len(auth_modules) > 0:
-        print(
-            "Architecture Violation: Found unauthorized authentication modules outside 'shared/common/auth/'."
-        )
+        violations.append("Architecture Violation: Found unauthorized authentication modules outside 'shared/common/auth/'.")
         for module in auth_modules:
-            print(f"- {module}")
-        sys.exit(1)
-    else:
-        print(
-            "Architecture Check: Only one central authentication module found (or none outside shared/common/auth/)."
-        )
+            violations.append(f"- {module}")
 
     # --- UI/CSS Control Module Check ---
     ui_css_modules = []
@@ -120,19 +141,22 @@ def check_architecture():
     ui_css_modules = [m for m in ui_css_modules if m not in UI_CSS_EXCEPTIONS]
 
     if len(ui_css_modules) > 0:
-        print(
-            "Architecture Violation: Found unauthorized UI/CSS control modules outside 'shared/frontend_base/'."
-        )
+        violations.append("Architecture Violation: Found unauthorized UI/CSS control modules outside 'shared/frontend_base/'.")
         for module in ui_css_modules:
-            print(f"- {module}")
+            violations.append(f"- {module}")
+
+    # --- Redis Import Check ---
+    violations.extend(check_for_direct_redis_imports())
+
+    if violations:
+        print("\n--- Architectural Violations Found! ---")
+        for violation in violations:
+            print(f"- {violation}")
+        print("\nPlease correct these violations to maintain architectural consistency.")
         sys.exit(1)
     else:
-        print(
-            "Architecture Check: Only one central UI/CSS control module found (or none outside shared/frontend_base/)."
-        )
-
-    print("Architecture check passed.")
-    sys.exit(0)
+        print("\n--- All architectural checks passed! ---")
+        sys.exit(0)
 
 
 if __name__ == "__main__":

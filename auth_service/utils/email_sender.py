@@ -2,11 +2,11 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-# --- Email Configuration (PLACEHOLDERS - MOVE TO CONFIGURATION) ---
-SMTP_SERVER = "smtp.example.com"
-SMTP_PORT = 587
-SMTP_USERNAME = "your_email@example.com"
-SMTP_PASSWORD = "your_email_password"
+# --- Email Configuration (MOVE TO A SECURE CONFIGURATION/SECRET MANAGEMENT SYSTEM) ---
+SMTP_SERVER = "smtp.mailtrap.io"
+SMTP_PORT = 2525
+SMTP_USERNAME = "your_mailtrap_username"
+SMTP_PASSWORD = "your_mailtrap_password"
 # -----------------------------------------------------------------
 
 
