@@ -2,7 +2,8 @@ import os
 from typing import Optional
 
 from dotenv import load_dotenv
-from secrets_manager.utils.logger import logger
+
+from shared.secrets_manager.utils.logger import logger
 
 
 class EnvBackend:

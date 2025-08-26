@@ -1,7 +1,8 @@
 from typing import Optional
 
 import keyring
-from secrets_manager.utils.logger import logger
+
+from shared.secrets_manager.utils.logger import logger
 
 
 class KeychainBackend:

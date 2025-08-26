@@ -2,7 +2,7 @@ import time
 from functools import wraps
 from typing import Any, Callable
 
-from .logger import logger
+from shared.secrets_manager.utils.logger import logger
 
 
 def retry(

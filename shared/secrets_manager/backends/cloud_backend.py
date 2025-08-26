@@ -14,8 +14,8 @@ except ImportError:
     GoogleAPIError = type("GoogleAPIError", (Exception,), {})
     _HAS_GCP_LIBS = False
 
-from secrets_manager.utils.logger import logger
-from secrets_manager.utils.retries import retry
+from shared.secrets_manager.utils.logger import logger
+from shared.secrets_manager.utils.retries import retry
 
 
 class CloudBackend:

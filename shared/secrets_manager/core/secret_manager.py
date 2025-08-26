@@ -1,11 +1,11 @@
 import json
 from typing import Dict, List, Optional
 
-from secrets_manager.backends.cloud_backend import CloudBackend
-from secrets_manager.backends.env_backend import EnvBackend
-from secrets_manager.backends.keychain_backend import KeychainBackend
-from secrets_manager.utils.cache import cached_secret
-from secrets_manager.utils.logger import logger
+from shared.secrets_manager.backends.cloud_backend import CloudBackend
+from shared.secrets_manager.backends.env_backend import EnvBackend
+from shared.secrets_manager.backends.keychain_backend import KeychainBackend
+from shared.secrets_manager.utils.cache import cached_secret
+from shared.secrets_manager.utils.logger import logger
 
 
 class SecretManager:
