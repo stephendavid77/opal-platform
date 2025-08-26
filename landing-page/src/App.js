@@ -15,8 +15,10 @@ function App() {
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [email, setEmail] = useState(''); // New state for email
   const [token, setToken] = useState(null);
   const [error, setError] = useState(null);
+  const [isRegistering, setIsRegistering] = useState(false); // New state to toggle between login/register
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -45,6 +47,36 @@ function App() {
     }
   };
 
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setError(null);
+
+    try {
+      const response = await fetch(`${API_URL}/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username,
+          password,
+          email,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Registration failed');
+      }
+
+      const data = await response.json();
+      setToken(data.access_token);
+      alert('Registration successful! You are now logged in.');
+    } catch (error) {
+      setError(error.message);
+    }
+  };
+
   return (
     <div className="App">
       <header className="App-header">
@@ -65,37 +97,60 @@ function App() {
           </ul>
         </section>
         <section className="login-section">
-          <h2>Login</h2>
+          <h2>{isRegistering ? 'Register' : 'Login'}</h2>
           {token ? (
             <div>
               <p>Login successful!</p>
               <p>Token: {token}</p>
+              <button onClick={() => setToken(null)}>Logout</button>
             </div>
           ) : (
-            <form onSubmit={handleLogin}>
+            <>
               {error && <p className="error">{error}</p>}
-              <div>
-                <label htmlFor="username">Username</label>
-                <input
-                  type="text"
-                  id="username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  required
-                />
-              </div>
-              <div>
-                <label htmlFor="password">Password</label>
-                <input
-                  type="password"
-                  id="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
-              <button type="submit">Login</button>
-            </form>
+              <form onSubmit={isRegistering ? handleRegister : handleLogin}>
+                <div>
+                  <label htmlFor="username">Username</label>
+                  <input
+                    type="text"
+                    id="username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="password">Password</label>
+                  <input
+                    type="password"
+                    id="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                {isRegistering && (
+                  <div>
+                    <label htmlFor="email">Email</label>
+                    <input
+                      type="email"
+                      id="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                )}
+                <button type="submit">
+                  {isRegistering ? 'Register' : 'Login'}
+                </button>
+              </form>
+              <p>
+                {isRegistering ? 'Already have an account?' : "Don't have an account?"}{' '}
+                <button onClick={() => setIsRegistering(!isRegistering)}>
+                  {isRegistering ? 'Login' : 'Register'}
+                </button>
+              </p>
+            </>
           )}
         </section>
       </main>

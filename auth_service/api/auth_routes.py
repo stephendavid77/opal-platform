@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -49,9 +49,11 @@ class RefreshTokenRequest(BaseModel):
 
 router = APIRouter()
 
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
+
 
 async def get_current_user(
-    token: Annotated[str, Depends(OAuth2PasswordRequestForm(tokenUrl="/auth/token"))],
+    token: Annotated[str, Depends(oauth2_scheme)],
     db: Session = Depends(get_db),
 ):
     credentials_exception = HTTPException(
@@ -278,7 +280,7 @@ async def refresh_access_token(
 
 
 @router.get("/validate-token")
-async def validate_token(current_user: Annotated[User, Depends(get_current_user)]):
+async def validate_token(current_user: Annotated[User, Depends(oauth2_scheme)]):
     return {
         "message": "Token is valid",
         "username": current_user.username,

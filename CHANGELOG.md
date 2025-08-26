@@ -64,3 +64,21 @@
 ### Tue Aug 26 07:15:44 PDT 2025
 - File edited: 
 - Change: Refactored all run scripts to be more modular and use common scripts from shared/scripts.
+### Tue Aug 26 07:27:21 PDT 2025
+- File edited: scripts/check_architecture.py
+- Change: Added validation rules for .sh files to prevent architecture violations.
+### Tue Aug 26 07:28:15 PDT 2025
+- File edited: gemini.md
+- Change: Added context about script modularity and architectural validation to gemini.md.
+### Tue Aug 26 07:29:08 PDT 2025
+- File edited: README.md
+- Change: Updated README.md to reflect new script modularity and shell script validation rules.
+### Tue Aug 26 07:53:14 PDT 2025
+- File edited: auth_service/requirements.txt
+- Change: Corrected typos in package names in requirements.txt.
+### Tue Aug 26 07:56:04 PDT 2025
+- File edited: auth_service/api/auth_routes.py
+- Change: Corrected OAuth2PasswordRequestForm usage in get_current_user dependency.
+### Tue Aug 26 08:13:49 PDT 2025
+- File edited: landing-page/src/App.js
+- Change: Corrected syntax error in App.js (apostrophe in string).

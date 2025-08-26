@@ -1,6 +1,7 @@
-import ast
 import os
 import sys
+import ast
+import re
 
 
 def find_files(root_dir, extensions):
@@ -56,6 +57,48 @@ def check_for_direct_redis_imports():
                                 )
                     except Exception as e:
                         print(f"Error parsing {file_path}: {e}")
+    return violations
+
+
+def check_shell_scripts_for_violations():
+    """Checks .sh files for direct docker/gcloud commands outside designated scripts."""
+    violations = []
+    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    shared_scripts_dir = os.path.join(repo_root, "shared", "scripts")
+
+    # Patterns for commands that should be centralized
+    docker_commands = ["docker build", "docker run", "docker stop", "docker rm", "docker push", "docker wait"]
+    gcloud_commands = ["gcloud run deploy", "gcloud auth"]
+
+    # Allowed script names where these commands are expected
+    allowed_docker_scripts = ["run_webapp_docker.sh"]
+    allowed_gcloud_scripts = ["deploy_gcloud.sh"]
+
+    for dirpath, _, filenames in os.walk(repo_root):
+        if shared_scripts_dir in dirpath:
+            continue # Skip shared scripts directory
+
+        for filename in filenames:
+            if filename.endswith(".sh"):
+                file_path = os.path.join(dirpath, filename)
+                with open(file_path, "r") as f:
+                    content = f.read()
+
+                # Check for docker commands
+                if filename not in allowed_docker_scripts:
+                    for cmd in docker_commands:
+                        if re.search(r"\b" + re.escape(cmd) + r"\b", content):
+                            violations.append(
+                                f"Violation in {file_path}: Direct '{cmd}' command found. Please use the common docker script."
+                            )
+                
+                # Check for gcloud commands
+                if filename not in allowed_gcloud_scripts:
+                    for cmd in gcloud_commands:
+                        if re.search(r"\b" + re.escape(cmd) + r"\b", content):
+                            violations.append(
+                                f"Violation in {file_path}: Direct '{cmd}' command found. Please use the common gcloud script."
+                            )
     return violations
 
 
@@ -157,13 +200,16 @@ def check_architecture():
 
     if len(ui_css_modules) > 0:
         violations.append(
-            "Architecture Violation: Found unauthorized UI/CSS control modules outside 'shared/frontend_base/'."
+            "Architecture Violation: Found unauthorized UI/CSS control modules outside 'shared/common/auth/'."
         )
         for module in ui_css_modules:
             violations.append(f"- {module}")
 
     # --- Redis Import Check ---
     violations.extend(check_for_direct_redis_imports())
+
+    # --- Shell Script Check ---
+    violations.extend(check_shell_scripts_for_violations())
 
     if violations:
         print("\n--- Architectural Violations Found! ---")

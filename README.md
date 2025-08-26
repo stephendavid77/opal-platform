@@ -58,15 +58,23 @@ OpalSuite is built upon a monorepo structure, emphasizing shared components and 
     ```
 
 6.  **Start the Services:**
-    *   **Shared Backend:**
+    *   **Run all services (standalone):**
         ```bash
-        uvicorn backend.main:app --host 0.0.0.0 --port 8000
+        ./run_standalone.sh
         ```
-    *   **Landing Page:**
+    *   **Run all services (Docker):**
+        ```bash
+        ./run_webapp_docker.sh
+        ```
+    *   **Run a specific service (e.g., auth_service) without Docker:**
+        ```bash
+        cd auth_service
+        ./run_webapp_nodocker.sh
+        ```
+    *   **Run a specific service (e.g., landing-page) with Docker:**
         ```bash
         cd landing-page
-        npm install
-        npm start
+        ./run_webapp_docker.sh
         ```
 
 ## Code Quality and Architectural Integrity
@@ -74,6 +82,6 @@ OpalSuite is built upon a monorepo structure, emphasizing shared components and 
 To maintain high code quality and a consistent architecture, OpalSuite uses a combination of tools and scripts:
 
 *   **Formatting and Linting:** `black`, `isort`, and `flake8` are used to enforce code style and quality. These are managed through pre-commit hooks.
-*   **Architectural Checks:** The `scripts/check_architecture.py` script enforces key architectural rules, such as preventing direct Redis imports and ensuring that new authentication or UI modules are not created outside of the designated shared directories. This script can be run manually or integrated into your CI/CD pipeline.
+*   **Architectural Checks:** The `scripts/check_architecture.py` script enforces key architectural rules, such as preventing direct Redis imports, ensuring that new authentication or UI modules are not created outside of the designated shared directories, and validating shell scripts for direct `docker` or `gcloud` commands outside of designated common scripts.
 
 For more detailed information, please refer to the `gemini.md` file.

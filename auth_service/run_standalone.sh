@@ -9,5 +9,6 @@ kill_process_on_port 8000
 # Install dependencies
 pip install -r requirements.txt
 
-# Run the application
-uvicorn main:app --host 0.0.0.0 --port 8000
+# Run the application from the project root
+# This ensures 'auth_service' is treated as a package
+(cd .. && uvicorn auth_service.main:app --host 0.0.0.0 --port 8000)
