@@ -15,8 +15,17 @@ class EmailOTPSender(OTPSender):
         self.smtp_password = os.getenv("SMTP_PASSWORD")
         self.sender_email = os.getenv("SENDER_EMAIL")
 
-        if not all([self.smtp_server, self.smtp_username, self.smtp_password, self.sender_email]):
-            raise ValueError("SMTP environment variables are not fully configured for EmailOTPSender.")
+        if not all(
+            [
+                self.smtp_server,
+                self.smtp_username,
+                self.smtp_password,
+                self.sender_email,
+            ]
+        ):
+            raise ValueError(
+                "SMTP environment variables are not fully configured for EmailOTPSender."
+            )
 
     async def send_otp(self, recipient: str, otp_code: str, user_id: str):
         """Sends an OTP to the specified email recipient."""

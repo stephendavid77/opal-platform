@@ -31,3 +31,36 @@
 ### Tue Aug 26 06:39:33 PDT 2025
 - File edited: README.md
 - Change: Updated and cleaned up the README.md file, adding a section on architectural integrity and improving the getting started guide.
+### Tue Aug 26 06:49:09 PDT 2025
+- File edited: landing-page/src/App.js
+- Change: Implemented a login form and connected it to the authentication service.
+### Tue Aug 26 06:52:33 PDT 2025
+- File edited: auth_service/run_standalone.sh, auth_service/run_docker.sh, auth_service/deploy_gcloud.sh
+- Change: Created shell scripts for standalone, docker, and gcloud deployment for the auth_service.
+### Tue Aug 26 06:53:22 PDT 2025
+- File edited: landing-page/run_standalone.sh, landing-page/run_docker.sh, landing-page/deploy_gcloud.sh, landing-page/Dockerfile
+- Change: Created shell scripts for standalone, docker, and gcloud deployment for the landing-page.
+### Tue Aug 26 06:54:16 PDT 2025
+- File edited: BuildPilot/run_standalone.sh, BuildPilot/run_docker.sh, BuildPilot/deploy_gcloud.sh
+- Change: Created shell scripts for standalone, docker, and gcloud deployment for the BuildPilot project.
+### Tue Aug 26 06:55:22 PDT 2025
+- File edited: CalMind/run_standalone.sh, CalMind/run_docker.sh, CalMind/deploy_gcloud.sh, CalMind/Dockerfile
+- Change: Created shell scripts for standalone, docker, and gcloud deployment for the CalMind project.
+### Tue Aug 26 06:56:40 PDT 2025
+- File edited: MonitorIQ/run_standalone.sh, MonitorIQ/run_docker.sh, MonitorIQ/deploy_gcloud.sh, MonitorIQ/Dockerfile
+- Change: Created shell scripts for standalone, docker, and gcloud deployment for the MonitorIQ project.
+### Tue Aug 26 06:57:48 PDT 2025
+- File edited: RegressionInsight/run_standalone.sh, RegressionInsight/docker/run-docker.sh, RegressionInsight/deploy_gcloud.sh
+- Change: Created shell scripts for standalone, docker, and gcloud deployment for the RegressionInsight project.
+### Tue Aug 26 06:58:50 PDT 2025
+- File edited: StandupBot/run_standalone.sh, StandupBot/run_docker.sh, StandupBot/deploy_gcloud.sh
+- Change: Created shell scripts for standalone, docker, and gcloud deployment for the StandupBot project.
+### Tue Aug 26 07:00:01 PDT 2025
+- File edited: XrayQC/run_standalone.sh, XrayQC/run_docker.sh, XrayQC/deploy_gcloud.sh, XrayQC/Dockerfile
+- Change: Created shell scripts for standalone, docker, and gcloud deployment for the XrayQC project.
+### Tue Aug 26 07:01:05 PDT 2025
+- File edited: run_standalone.sh, run_docker.sh, deploy_gcloud.sh
+- Change: Created shell scripts for standalone, docker, and gcloud deployment for the root OpalSuite project.
+### Tue Aug 26 07:15:44 PDT 2025
+- File edited: 
+- Change: Refactored all run scripts to be more modular and use common scripts from shared/scripts.

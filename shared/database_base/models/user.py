@@ -1,7 +1,7 @@
 import uuid
 
 from passlib.context import CryptContext
-from sqlalchemy import Column, Enum, String, DateTime
+from sqlalchemy import Column, DateTime, Enum, String
 from sqlalchemy.dialects.postgresql import (  # Although using SQLite, keep for future compatibility
     UUID,
 )

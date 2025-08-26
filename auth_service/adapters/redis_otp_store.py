@@ -1,7 +1,8 @@
-from datetime import datetime, timedelta
-import redis
 import json
+from datetime import datetime, timedelta
 from typing import Optional
+
+import redis
 
 from .otp_store_interface import OTPStoreInterface
 
@@ -11,11 +12,14 @@ REDIS_HOST = "localhost"
 REDIS_PORT = 6379
 # -----------------------------------------------------------------
 
+
 class RedisOTPStore(OTPStoreInterface):
     """An OTP store that uses Redis as a backend."""
 
     def __init__(self, host: str = REDIS_HOST, port: int = REDIS_PORT, db: int = 0):
-        self.redis_client = redis.Redis(host=host, port=port, db=db, decode_responses=True)
+        self.redis_client = redis.Redis(
+            host=host, port=port, db=db, decode_responses=True
+        )
 
     async def store_otp(self, email: str, otp_code: str) -> None:
         expires_at = datetime.utcnow() + timedelta(minutes=OTP_EXPIRE_MINUTES)

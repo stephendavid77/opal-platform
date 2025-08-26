@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './App.css';
+
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 function App() {
   const applications = [
@@ -10,6 +12,38 @@ function App() {
     { name: 'MonitorIQ', url: '/monitor-iq' },
     { name: 'XrayQC', url: '/xray-qc' },
   ];
+
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [token, setToken] = useState(null);
+  const [error, setError] = useState(null);
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setError(null);
+
+    try {
+      const response = await fetch(`${API_URL}/auth/token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          username,
+          password,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Login failed');
+      }
+
+      const data = await response.json();
+      setToken(data.access_token);
+    } catch (error) {
+      setError(error.message);
+    }
+  };
 
   return (
     <div className="App">
@@ -32,15 +66,37 @@ function App() {
         </section>
         <section className="login-section">
           <h2>Login</h2>
-          <p>
-            This section can be integrated with a central login module.
-            <br />
-            (e.g., OAuth, JWT-based authentication)
-          </p>
-          {/* Placeholder for a login form or button */}
-          <button onClick={() => alert('Login functionality to be integrated!')}>
-            Login / Register
-          </button>
+          {token ? (
+            <div>
+              <p>Login successful!</p>
+              <p>Token: {token}</p>
+            </div>
+          ) : (
+            <form onSubmit={handleLogin}>
+              {error && <p className="error">{error}</p>}
+              <div>
+                <label htmlFor="username">Username</label>
+                <input
+                  type="text"
+                  id="username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <label htmlFor="password">Password</label>
+                <input
+                  type="password"
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <button type="submit">Login</button>
+            </form>
+          )}
         </section>
       </main>
       <footer>

@@ -2,6 +2,7 @@ from typing import Optional
 
 from auth_service.utils.email_sender import send_email
 from auth_service.utils.otp_generator import generate_otp
+
 from .otp_store_interface import OTPStoreInterface
 from .redis_otp_store import RedisOTPStore
 
@@ -9,6 +10,7 @@ from .redis_otp_store import RedisOTPStore
 OTP_EXPIRE_MINUTES = 10
 OTP_STORE = "redis"  # Can be 'redis', 'in_memory', etc.
 # -----------------------------------------------------------------
+
 
 def get_otp_store() -> OTPStoreInterface:
     """Factory function to get the configured OTP store."""
@@ -19,6 +21,7 @@ def get_otp_store() -> OTPStoreInterface:
     #     return InMemoryOTPStore()
     else:
         raise ValueError(f"Unknown OTP store: {OTP_STORE}")
+
 
 otp_store = get_otp_store()
 
