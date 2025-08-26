@@ -132,6 +132,20 @@ This section details the evolution of the `OpalSuite` project and significant re
     *   Core logic (`secret_manager.py`) implemented to orchestrate backend priority.
     *   New dependencies (`python-dotenv`, `keyring`, `google-cloud-secret-manager`) added to `OpalSuite/requirements.txt`.
 
+*   **Authentication Service Consolidation and Fixes (August 26, 2025):**
+    *   The standalone `auth_service` directory was removed, and its functionality was fully integrated into the main shared backend (`OpalSuite/backend/main.py`).
+    *   Corrected `User.id` type handling in JWT token creation and validation (from UUID string to Integer).
+    *   Fixed `AttributeError` by consistently using `user.roles` instead of `user.role` for user role access.
+    *   Ensured JWT tokens correctly include `user_id` and `roles` for robust authentication.
+
+*   **Centralized Frontend API Client Implementation (August 26, 2025):**
+    *   A shared API client (`shared/frontend-base/src/api/apiClient.js`) was created to centralize authenticated API requests for React applications.
+    *   This client automatically injects the `Authorization: Bearer` header, reducing code duplication in frontend applications.
+    *   The `landing-page` application was updated to utilize this new `apiClient`.
+
+*   **Monorepo Frontend Package Setup (August 26, 2025):**
+    *   `shared/frontend-base` was configured as a local package (`file:` dependency) for `landing-page`, resolving module import issues and enabling proper monorepo package management for frontend components.
+
 ## 4. Current State of Sub-Applications
 
 *   **RegressionInsight:**
@@ -194,9 +208,13 @@ OpalSuite is designed as a monorepo to foster code reuse, consistency, and strea
     *   JWT token validation and user retrieval (`get_current_user` dependency).
 *   **Database Integration:** Uses the `User` model from `OpalSuite/shared/database-base/models/user.py` and connects to the common database.
 *   **Integration:**
-    *   The `OpalSuite/backend/main.py` includes this authentication router.
-    *   The `landing-page` will interact with these endpoints for user authentication.
-    *   Sub-applications will use the `get_current_user` dependency to protect their routes and will send JWT tokens with their requests.
+    *   The `OpalSuite/backend/main.py` includes this authentication router, serving as the single source of authentication for the entire platform.
+    *   The `landing-page` interacts with these endpoints for user authentication.
+    *   Sub-applications are designed to use the `get_current_user` dependency to protect their routes and will send JWT tokens with their requests.
+*   **Key Refinements:**
+    *   Ensured correct handling of `User.id` as an integer type throughout token creation and validation.
+    *   Standardized user role access using the `user.roles` attribute.
+    *   Guaranteed that JWT tokens contain essential `user_id` and `roles` claims for robust authentication.
 
 ### 5.3. Common Database
 
@@ -219,7 +237,8 @@ OpalSuite is designed as a monorepo to foster code reuse, consistency, and strea
 *   **Components:**
     *   Bootstrap CSS imported centrally.
     *   `OpalSuite/shared/frontend-base/src/styles/main.css` for custom branding.
-    *   Will export reusable UI components that wrap Bootstrap components with `OpalSuite`'s design.
+    *   Exports reusable UI components that wrap Bootstrap components with `OpalSuite`'s design.
+    *   **Centralized API Client (`src/api/apiClient.js`):** Provides a single point for making authenticated API requests, automatically injecting JWT tokens and handling global authentication-related errors (e.g., 401/403 responses). This promotes code reuse and consistency across all frontend applications.
 
 ### 5.5. Landing Page
 
@@ -285,8 +304,9 @@ OpalSuite features a robust and resilient secret management module to securely r
 *   `react`
 *   `react-dom`
 *   `react-scripts`
-*   `bootstrap` (will be added when integrating shared frontend-base)
-*   `react-bootstrap` (will be added when integrating shared frontend-base)
+*   `bootstrap`
+*   `react-bootstrap`
+*   `@opalsuite/frontend-base` (local monorepo package)
 
 ### Sub-Application Dependencies:
 

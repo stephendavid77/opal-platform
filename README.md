@@ -22,7 +22,8 @@ OpalSuite is built upon a monorepo structure, emphasizing shared components and 
 ### Key Architectural Pillars:
 
 *   **Monorepo Structure:** All projects are stored in a single repository to facilitate shared code, consistent tooling, and atomic commits. The `shared/` directory is the heart of the monorepo, containing all common and reusable components.
-*   **Centralized Authentication:** A robust, Google Cloud-ready authentication service (`shared/common/auth/`) provides centralized user management and secure session handling using FastAPI, JWT, and refresh tokens.
+*   **Centralized Authentication:** A robust, Google Cloud-ready authentication service (`shared/common/auth/`) provides centralized user management and secure session handling using FastAPI, JWT, and refresh tokens. This service is now fully integrated into the main shared backend (`backend/main.py`).
+*   **Centralized Frontend API Client:** A shared API client (`shared/frontend-base/src/api/apiClient.js`) for React applications that automatically handles JWT token injection for authenticated requests, ensuring consistent authorization across frontend tools.
 *   **Centralized Secret Management:** A secure and abstracted secret management module (`shared/secrets_manager/`) retrieves secrets from various sources, including local `.env` files, environment variables, OS keychains, and Google Cloud Secret Manager.
 *   **Common Database:** A single, shared database instance (`shared/database-base/`) is used across all applications, leveraging SQLAlchemy for ORM.
 *   **Consistent User Interface:** A centralized design system (`shared/frontend-base/`) based on React and Bootstrap ensures a unified user experience.
@@ -36,10 +37,9 @@ OpalSuite is built upon a monorepo structure, emphasizing shared components and 
     cd OpalSuite
     ```
 
-2.  **Install Root and Auth Service Dependencies:**
+2.  **Install Root Dependencies:**
     ```bash
     pip install -r requirements.txt
-    pip install -r auth_service/requirements.txt
     ```
 
 3.  **Initialize Shared Database:**
@@ -58,7 +58,7 @@ OpalSuite is built upon a monorepo structure, emphasizing shared components and 
     ```
 
 6.  **Start the Services:**
-    *   **Run all services (standalone):**
+    *   **Run the consolidated backend (standalone):**
         ```bash
         ./run_standalone.sh
         ```
@@ -66,10 +66,11 @@ OpalSuite is built upon a monorepo structure, emphasizing shared components and 
         ```bash
         ./run_webapp_docker.sh
         ```
-    *   **Run a specific service (e.g., auth_service) without Docker:**
+    *   **Run a specific frontend service (e.g., landing-page) without Docker:**
         ```bash
-        cd auth_service
-        ./run_webapp_nodocker.sh
+        cd landing-page
+        npm install # Install frontend dependencies, including shared frontend-base
+        npm start
         ```
     *   **Run a specific service (e.g., landing-page) with Docker:**
         ```bash
