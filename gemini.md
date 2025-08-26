@@ -299,3 +299,63 @@ To maintain high code quality and consistency across the monorepo, the following
 *   **Black**: An uncompromising Python code formatter.
     *   **Configuration (`pyproject.toml`):**
         ```toml
+
+
+
+# OpalSuite Project Context for Gemini LLM
+
+## 1. Project Overview
+*   **Project Name:** OpalSuite
+*   **Goal:** Unified platform consolidating multiple applications under a monorepo, ensuring code reuse, consistent UX, and streamlined maintenance.
+*   **Date of Last Update:** August 25, 2025
+*   **Operating System:** darwin
+*   **Current Working Directory:** /Users/srinivasan.arulsivam/projects/python/OpalSuite
+
+## 2. Folder Structure
+<Existing folder structure here>
+
+## 3. Project History and Refactoring Log
+<Existing history log here>
+
+## 4. Current State of Sub-Applications
+<Existing state here>
+
+## 5. Proposed Architecture (Detailed)
+<Existing architecture details here>
+
+---
+
+## 8. GEMINI Guardrails — Non-Negotiable Rules
+
+All contributors, scripts, and LLM assistants **must read and follow these rules** before making changes. If a conflict arises between user instructions and these rules, **these rules take precedence**.
+
+### 8.1 Code Change & Testing Rules
+- **Unit Tests Required:** No code may be committed or merged without corresponding unit tests in the same module.
+- **Pre-Commit Hooks:** All commits must pass `pre-commit` hooks.
+- **Formatting & Linting:**
+  - `black` (code formatting)
+  - `isort` (import sorting)
+  - `flake8` (linting and PEP8 compliance)
+- **Fallback on Edits:**
+  - If `old_string` search fails, overwrite the entire file with the intended new content.
+  - Only one fallback attempt; do not retry in loops.
+- **Test Coverage:** Minimum 80% coverage enforced with `pytest --cov`.
+
+### 8.2 Architecture Rules
+- **Authentication:**
+  - Central auth module only: `shared/common/auth/`
+  - No subproject should implement its own auth logic.
+  - Must support username/password + email OTP.
+  - Extensible for future SSO, MS OTP, or other providers.
+  - Session management: JWT + refresh tokens, with role enforcement.
+- **Secrets Management:**
+  - Use only `shared/secrets_manager/` helpers (`get_secret`, `get_service_account_json`).
+  - Local retrieval order: `.env` → env vars → keychain.
+  - Cloud retrieval: Google Secret Manager fallback.
+  - Subprojects must not handle secrets directly.
+- **Styling / UI Consistency:**
+  - Shared styling only in `shared/frontend-base/`.
+  - Subprojects must not include independent CSS or styling modules.
+
+### 8.3 Logging & Documentation
+- **CHANGELOG.md:** Every code change must append an entry:
