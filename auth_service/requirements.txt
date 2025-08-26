@@ -1,8 +1,8 @@
 fastapi
-uvicorn[standard]
+uvicorn
 sqlalchemy
 passlib[bcrypt]
 python-jose[cryptography]
+pydantic
+email-validator
 python-dotenv
-keyring
-google-cloud-secret-manager

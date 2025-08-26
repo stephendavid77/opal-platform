@@ -1,70 +1,48 @@
-# Getting Started with Create React App
+# OpalSuite Shared Frontend Base (Design System)
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## Overview
 
-## Available Scripts
+The `shared/frontend_base/` module serves as `OpalSuite`'s centralized design system and shared UI component library. Its primary goal is to ensure a consistent look and feel across all React-based sub-applications within the monorepo. By providing reusable components and a unified styling approach, it accelerates frontend development, reduces design inconsistencies, and simplifies maintenance.
 
-In the project directory, you can run:
+## Architecture
 
-### `npm start`
+### 1. React Project Setup
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+*   **Foundation:** This module is initialized as a standard React project, providing a familiar development environment and build tooling.
+*   **Core Imports:** The `src/index.js` file is configured to centrally import the chosen CSS framework (Bootstrap) and any custom `OpalSuite` global styles.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+### 2. Styling and Theming
 
-### `npm test`
+*   **Bootstrap Integration:** Bootstrap is integrated as the primary CSS framework, providing a robust and responsive grid system, pre-built components, and utility classes.
+*   **Custom Styles (`src/styles/main.css`):** This file is dedicated to `OpalSuite`'s custom branding, including color palettes, typography, spacing, and overrides to Bootstrap defaults. This ensures a unique and consistent visual identity.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### 3. Reusable UI Components
 
-### `npm run build`
+*   **Component Library:** This module will house a library of reusable React UI components (e.g., `OpalButton`, `OpalCard`, `OpalNavbar`). These components will wrap standard HTML elements or React-Bootstrap components, applying `OpalSuite`'s custom styling and design principles.
+*   **Export Mechanism:** Components will be exported from this module, allowing sub-applications to easily import and use them.
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## How it Fits into OpalSuite
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+*   **Visual Consistency:** Guarantees a unified user experience across all applications, making the entire suite feel cohesive.
+*   **Accelerated Development:** Frontend developers can leverage pre-built, styled components, significantly speeding up UI development.
+*   **Simplified Maintenance:** Changes to the design system or core styling can be made in one place and propagated across all applications.
+*   **Brand Identity:** Reinforces the `OpalSuite` brand through consistent visual elements.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## Getting Started (Development)
 
-### `npm run eject`
+1.  **Install Dependencies:** Navigate to `OpalSuite/shared/frontend_base/` and install Node.js dependencies:
+    ```bash
+    npm install
+    ```
+2.  **Develop Components:** Create and modify React components within `src/components/` (or similar) and define custom styles in `src/styles/main.css`.
+3.  **Integrate into Sub-Applications:**
+    *   In each React-based sub-application's `frontend/` directory, ensure `bootstrap` and `react-bootstrap` are installed.
+    *   Configure the sub-application's build system (e.g., `craco` for Create React App) to resolve imports from `OpalSuite/shared/frontend_base/`.
+    *   Import the shared styles and components into the sub-application's `index.js` or `App.js`.
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## Future Enhancements
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+*   **Storybook Integration:** Use Storybook to develop, document, and test UI components in isolation.
+*   **Theming System:** Implement a more advanced theming system for dynamic theme switching.
+*   **Accessibility (A11y):** Ensure all reusable components adhere to accessibility best practices.
+*   **Automated Visual Regression Testing:** Integrate tools to automatically detect unintended visual changes.

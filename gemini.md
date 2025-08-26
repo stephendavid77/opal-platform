@@ -124,6 +124,14 @@ This section details the evolution of the `OpalSuite` project and significant re
     *   `.pre-commit-config.yaml` was created to define pre-commit hooks for formatting and linting.
     *   `pre-commit` hooks were installed into the Git repository.
 
+*   **Centralized Secret Management Module Implementation:**
+    *   `secrets_manager/` directory and its subdirectories (`core/`, `backends/`, `utils/`) were created within `shared/`.
+    *   Public API (`get_secret`, `get_service_account_json`) exposed via `secrets_manager/__init__.py`.
+    *   Backends (`env_backend.py`, `keychain_backend.py`, `cloud_backend.py`) implemented for different secret sources.
+    *   Utilities (`logger.py`, `retries.py`, `cache.py`) implemented for logging, retry logic, and caching.
+    *   Core logic (`secret_manager.py`) implemented to orchestrate backend priority.
+    *   New dependencies (`python-dotenv`, `keyring`, `google-cloud-secret-manager`) added to `OpalSuite/requirements.txt`.
+
 ## 4. Current State of Sub-Applications
 
 *   **RegressionInsight:**
@@ -224,6 +232,24 @@ OpalSuite is designed as a monorepo to foster code reuse, consistency, and strea
 *   **Central Web Server:** A web server (e.g., Nginx, Traefik) will be used at the `OpalSuite` root to act as a reverse proxy, routing traffic to the `landing-page` and individual sub-applications.
 *   **Containerization:** Docker and Docker Compose are recommended for orchestrating all services (shared backend, landing page, and each sub-application's backend/frontend) for simplified development and deployment.
 
+### 5.7. Centralized Secret Management Module
+
+OpalSuite features a robust and resilient secret management module to securely retrieve sensitive information for all subprojects.
+
+*   **Module Location:** `OpalSuite/shared/secrets_manager/`.
+*   **Secret Retrieval Priority:** Secrets are retrieved based on a defined priority chain, ensuring resilience and graceful fallback:
+    1.  Local `.env` file (for local development)
+    2.  Environment variables (OS-level or CI/CD injected)
+    3.  Local secure keychain (macOS Keychain, Windows Credential Manager, Linux Secret Service)
+    4.  Cloud Secret Manager (Google Cloud Secret Manager) when deployed
+*   **Abstraction:** Subprojects call simple helper methods (`get_secret`, `get_service_account_json`) and do not need to know the secret's source or retrieval mechanism.
+*   **Security & Robustness:**
+    *   Never logs secrets.
+    *   Handles network failures gracefully when accessing cloud secrets.
+    *   Includes retry logic for cloud Secret Manager calls.
+    *   Optional caching to reduce API calls and latency.
+*   **Extensibility:** Designed with a modular architecture to easily add new secret sources in the future.
+
 ## 6. Key Decisions and Rationale
 
 *   **Monorepo:** Chosen for code reuse, consistent development practices, and easier management of shared components.
@@ -242,6 +268,9 @@ OpalSuite is designed as a monorepo to foster code reuse, consistency, and strea
 *   `sqlalchemy`
 *   `passlib[bcrypt]`
 *   `python-jose[cryptography]`
+*   `python-dotenv`
+*   `keyring`
+*   `google-cloud-secret-manager`
 
 ### Shared Frontend Dependencies (`OpalSuite/shared/frontend-base/package.json`):
 
@@ -270,131 +299,3 @@ To maintain high code quality and consistency across the monorepo, the following
 *   **Black**: An uncompromising Python code formatter.
     *   **Configuration (`pyproject.toml`):**
         ```toml
-        [tool.black]
-        line-length = 88
-        target-version = ['py311']
-        include = '\.pyi?
-
-To fully realize the `OpalSuite` vision with consistent look and feel, common database, and centralized authentication, you will need to perform the following tasks:
-
-1.  **Full CSS Integration:**
-    *   **Develop `shared/frontend-base/`:** Refactor the `OpalSuite/shared/frontend-base/` project to create and export reusable UI components (e.g., `OpalButton`, `OpalCard`, `OpalNavbar`) that wrap Bootstrap components and apply `OpalSuite`'s custom styling.
-    *   **Integrate into Sub-Applications' Frontends:** For each React-based sub-application (`OpalSuite/landing-page`, `OpalSuite/StandupBot/frontend`, `OpalSuite/RegressionInsight/frontend`, etc.):
-        *   Configure their build systems (e.g., Webpack/CRA) to correctly resolve imports from `OpalSuite/shared/frontend-base/`.
-        *   Modify their `index.js` or `App.js` to import the shared Bootstrap CSS and your custom `OpalSuite` styles.
-        *   Gradually replace existing UI components with the `Opal` prefixed components from `OpalSuite/shared/frontend-base/`.
-
-2.  **Full Common Database Integration:**
-    *   **Define All Common Models:** Identify any other database models that are truly shared across multiple applications (beyond just `User`) and define them within `OpalSuite/shared/database-base/models/`.
-    *   **Integrate into Sub-Applications' Backends:** For each Python-based sub-application's backend (e.g., `OpalSuite/RegressionInsight/backend`, `OpalSuite/StandupBot/backend`, `OpalSuite/BuildPilot`, `OpalSuite/CalMind`, `OpalSuite/MonitorIQ`, `OpalSuite/XrayQC`):
-        *   Modify their database connection and session management to use the shared SQLAlchemy `engine`, `SessionLocal`, `Base`, and `get_db` from `OpalSuite/shared/database-base/database.py`.
-        *   Refactor their existing database models to inherit from the shared `Base` and utilize the common models where applicable (e.g., replace their local `User` model with the one from `OpalSuite/shared/database-base/models/user.py`).
-        *   Plan and execute database migrations (e.g., using Alembic) for the shared database schema.
-
-3.  **Full Centralized Authentication Integration:**
-    *   **Run the Shared Backend:** Start the `OpalSuite` shared backend (`uvicorn OpalSuite.backend.main:app --host 0.0.0.0 --port 8000`). This will expose the central authentication endpoints.
-    *   **Integrate with Landing Page:** Modify the `OpalSuite/landing-page/` React app to interact with the `/auth/register` and `/auth/token` endpoints of the shared backend for user registration and login. Implement secure storage and usage of the received JWT token.
-    *   **Integrate with Sub-Applications' Backends:** Update each sub-application's backend to use the `get_current_user` dependency from `OpalSuite/shared/common/auth/auth.py` to protect its routes.
-    *   **Integrate with Sub-Applications' Frontends:** Modify each sub-application's frontend to send the JWT token with its requests to its respective backend for authentication.
-
-4.  **Centralized Routing and Deployment:**
-    *   **Central Web Server:** Set up a web server (e.g., Nginx, Traefik) at the `OpalSuite` root. This server will act as a reverse proxy, routing traffic to the `landing-page` and each sub-application based on URL paths (e.g., `/` for the landing page, `/regression-insight` for the `RegressionInsight` app, etc.).
-    *   **Containerization (Recommended):** Use Docker and Docker Compose to containerize each sub-application's backend and frontend, as well as the `OpalSuite` shared backend and landing page. This will simplify dependency management, deployment, and local development.
-
-5.  **Comprehensive Testing:**
-    *   After each integration step, thoroughly test all functionalities (unit, integration, and end-to-end tests) to ensure that the changes have not introduced regressions and that the new integrated system works as expected.
-
-        exclude = '/(?:\.git|\.venv|node_modules|build|dist|__pycache__)/'
-        ```
-*   **isort**: A Python utility to sort imports alphabetically and automatically separate them into sections.
-    *   **Configuration (`pyproject.toml`):**
-        ```toml
-        [tool.isort]
-        profile = "black"
-        multi_line_output = 3
-        include_trailing_comma = true
-        force_grid_wrap = 0
-        use_parentheses = true
-        ensure_newline_before_comments = true
-        line_length = 88
-        skip_glob = [
-            "*/.venv/*",
-            "*/node_modules/*",
-            "*/build/*",
-            "*/dist/*",
-            "*/__pycache__/*",
-        ]
-        ```
-*   **Flake8**: A tool for enforcing style guide (PEP8) and checking for common programming errors.
-    *   **Configuration (`pyproject.toml`):**
-        ```toml
-        [tool.flake8]
-        max-line-length = 88
-        extend-ignore = ["E203", "W503"]
-        exclude = [
-            ".git",
-            ".venv",
-            "node_modules",
-            "build",
-            "dist",
-            "__pycache__",
-        ]
-        ```
-*   **pre-commit**: Used to manage and maintain pre-commit git hooks, ensuring that code is formatted and linted before every commit.
-    *   **Configuration (`.pre-commit-config.yaml`):**
-        ```yaml
-        repos:
-          - repo: https://github.com/pre-commit/pre-commit-hooks
-            rev: v4.4.0
-            hooks:
-              - id: trailing-whitespace
-              - id: end-of-file-fixer
-              - id: check-yaml
-              - id: check-added-large-files
-
-          - repo: https://github.com/psf/black
-            rev: 23.3.0
-            hooks:
-              - id: black
-
-          - repo: https://github.com/PyCQA/isort
-            rev: 5.12.0
-            hooks:
-              - id: isort
-
-          - repo: https://github.com/PyCQA/flake8
-            rev: 6.0.0
-            hooks:
-              - id: flake8
-        ```
-
-## 8. Roadmap and Next Steps (Detailed)
-
-To fully realize the `OpalSuite` vision with consistent look and feel, common database, and centralized authentication, you will need to perform the following tasks:
-
-1.  **Full CSS Integration:**
-    *   **Develop `shared/frontend-base/`:** Refactor the `OpalSuite/shared/frontend-base/` project to create and export reusable UI components (e.g., `OpalButton`, `OpalCard`, `OpalNavbar`) that wrap Bootstrap components and apply `OpalSuite`'s custom styling.
-    *   **Integrate into Sub-Applications' Frontends:** For each React-based sub-application (`OpalSuite/landing-page`, `OpalSuite/StandupBot/frontend`, `OpalSuite/RegressionInsight/frontend`, etc.):
-        *   Configure their build systems (e.g., Webpack/CRA) to correctly resolve imports from `OpalSuite/shared/frontend-base/`.
-        *   Modify their `index.js` or `App.js` to import the shared Bootstrap CSS and your custom `OpalSuite` styles.
-        *   Gradually replace existing UI components with the `Opal` prefixed components from `OpalSuite/shared/frontend-base/`.
-
-2.  **Full Common Database Integration:**
-    *   **Define All Common Models:** Identify any other database models that are truly shared across multiple applications (beyond just `User`) and define them within `OpalSuite/shared/database-base/models/`.
-    *   **Integrate into Sub-Applications' Backends:** For each Python-based sub-application's backend (e.g., `OpalSuite/RegressionInsight/backend`, `OpalSuite/StandupBot/backend`, `OpalSuite/BuildPilot`, `OpalSuite/CalMind`, `OpalSuite/MonitorIQ`, `OpalSuite/XrayQC`):
-        *   Modify their database connection and session management to use the shared SQLAlchemy `engine`, `SessionLocal`, `Base`, and `get_db` from `OpalSuite/shared/database-base/database.py`.
-        *   Refactor their existing database models to inherit from the shared `Base` and utilize the common models where applicable (e.g., replace their local `User` model with the one from `OpalSuite/shared/database-base/models/user.py`).
-        *   Plan and execute database migrations (e.g., using Alembic) for the shared database schema.
-
-3.  **Full Centralized Authentication Integration:**
-    *   **Run the Shared Backend:** Start the `OpalSuite` shared backend (`uvicorn OpalSuite.backend.main:app --host 0.0.0.0 --port 8000`). This will expose the central authentication endpoints.
-    *   **Integrate with Landing Page:** Modify the `OpalSuite/landing-page/` React app to interact with the `/auth/register` and `/auth/token` endpoints of the shared backend for user registration and login. Implement secure storage and usage of the received JWT token.
-    *   **Integrate with Sub-Applications' Backends:** Update each sub-application's backend to use the `get_current_user` dependency from `OpalSuite/shared/common/auth/auth.py` to protect its routes.
-    *   **Integrate with Sub-Applications' Frontends:** Modify each sub-application's frontend to send the JWT token with its requests to its respective backend for authentication.
-
-4.  **Centralized Routing and Deployment:**
-    *   **Central Web Server:** Set up a web server (e.g., Nginx, Traefik) at the `OpalSuite` root. This server will act as a reverse proxy, routing traffic to the `landing-page` and each sub-application based on URL paths (e.g., `/` for the landing page, `/regression-insight` for the `RegressionInsight` app, etc.).
-    *   **Containerization (Recommended):** Use Docker and Docker Compose to containerize each sub-application's backend and frontend, as well as the `OpalSuite` shared backend and landing page. This will simplify dependency management, deployment, and local development.
-
-5.  **Comprehensive Testing:**
-    *   After each integration step, thoroughly test all functionalities (unit, integration, and end-to-end tests) to ensure that the changes have not introduced regressions and that the new integrated system works as expected.
