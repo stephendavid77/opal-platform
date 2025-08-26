@@ -10,6 +10,7 @@ from shared.secrets_manager.utils.logger import logger
 
 from auth_service.adapters.otp import generate_and_send_otp
 from auth_service.adapters.otp import verify_otp as verify_otp_code
+from auth_service.adapters.otp import OTP_EXPIRE_MINUTES # Import OTP_EXPIRE_MINUTES
 from shared.database_base.database import get_db
 from shared.database_base.models.user import User
 from auth_service.utils.jwt_helpers import (
@@ -47,6 +48,16 @@ class OTPVerification(BaseModel):
 
 class RefreshTokenRequest(BaseModel):
     refresh_token: str
+
+
+class PasswordResetRequest(BaseModel):
+    email: str
+
+
+class PasswordReset(BaseModel):
+    email: str
+    otp_code: str
+    new_password: str
 
 
 router = APIRouter()
@@ -127,6 +138,13 @@ async def login_for_access_token(
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    # Add check for active status
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Account is not active. Please activate your account via OTP.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": user.username, "roles": user.roles},
@@ -171,6 +189,57 @@ async def request_otp(otp_request: OTPRequest, db: Session = Depends(get_db)):
         )
 
 
+@router.post("/request-password-reset-otp")
+async def request_password_reset_otp(request: PasswordResetRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == request.email).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User with this email not found",
+        )
+
+    otp_code = await generate_and_send_otp(request.email) # Reuse existing OTP generation and sending
+    if otp_code:
+        # Store OTP in user model for password reset
+        user.otp_code = otp_code
+        user.otp_expiry = datetime.utcnow() + timedelta(minutes=OTP_EXPIRE_MINUTES) # Use OTP_EXPIRE_MINUTES from adapters/otp.py
+        db.commit()
+        db.refresh(user)
+        return {"message": "Password reset OTP sent to email."}
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to send password reset OTP",
+        )
+
+
+@router.post("/reset-password")
+async def reset_password(request: PasswordReset, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == request.email).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User with this email not found",
+        )
+
+    # Verify OTP
+    if not user.otp_code or user.otp_code != request.otp_code or \
+       not user.otp_expiry or user.otp_expiry < datetime.utcnow():
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired OTP",
+        )
+
+    # Hash new password and update
+    user.hashed_password = hash_password(request.new_password)
+    user.otp_code = None  # Clear OTP
+    user.otp_expiry = None # Clear OTP expiry
+    db.commit()
+    db.refresh(user)
+
+    return {"message": "Password has been reset successfully."}
+
+
 @router.post("/verify-otp", response_model=Token)
 async def verify_otp(otp_verification: OTPVerification, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == otp_verification.email).first()
@@ -201,6 +270,26 @@ async def verify_otp(otp_verification: OTPVerification, db: Session = Depends(ge
             "token_type": "bearer",
             "refresh_token": refresh_token,
         }
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired OTP"
+        )
+
+
+@router.post("/activate-account")
+async def activate_account(otp_verification: OTPVerification, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == otp_verification.email).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User with this email not found",
+        )
+
+    if await verify_otp_code(otp_verification.email, otp_verification.otp_code):
+        user.is_active = True
+        db.commit()
+        db.refresh(user)
+        return {"message": "Account activated successfully!"}
     else:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired OTP"
@@ -277,6 +366,8 @@ class UserResponse(BaseModel): # Define a Pydantic model for the response
     username: str
     email: str | None = None
     is_active: bool
+    first_name: str | None = None # New field
+    last_name: str | None = None  # New field
     roles: str
 
     class Config:

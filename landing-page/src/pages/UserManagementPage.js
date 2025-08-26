@@ -28,12 +28,13 @@ const UserManagementPage = () => {
         if (window.confirm('Are you sure you want to delete this user?')) {
             try {
                 // Replace with your actual API endpoint
+                const accessToken = localStorage.getItem('access_token'); // Retrieve token
+
                 const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/auth/users/${userId}`, {
                     method: 'DELETE',
-                    // You might need to include authentication headers here
-                    // headers: {
-                    //     'Authorization': `Bearer YOUR_JWT_TOKEN`,
-                    // },
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                    },
                 });
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -59,6 +60,9 @@ const UserManagementPage = () => {
                                 <th>ID</th>
                                 <th>Username</th>
                                 <th>Email</th>
+                                <th>Active</th> {/* New header */}
+                                <th>First Name</th> {/* New header */}
+                                <th>Last Name</th> {/* New header */}
                                 <th>Roles</th>
                                 <th>Actions</th>
                             </tr>
@@ -69,6 +73,9 @@ const UserManagementPage = () => {
                                     <td>{user.id}</td>
                                     <td>{user.username}</td>
                                     <td>{user.email}</td>
+                                    <td>{user.is_active ? 'Yes' : 'No'}</td> {/* New data cell */}
+                                    <td>{user.first_name}</td> {/* New data cell */}
+                                    <td>{user.last_name}</td> {/* New data cell */}
                                     <td>{user.roles}</td>
                                     <td>
                                         <Button

@@ -1,102 +1,73 @@
-.App {
-  text-align: center;
-  font-family: Arial, sans-serif;
-  color: #333;
+/* General body styling */
+body {
+  background: linear-gradient(to right, #ece9e6, #ffffff); /* Subtle gradient background */
+  font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; /* Modern font */
 }
 
-.App-header {
-  background-color: #282c34;
-  padding: 20px;
-  color: white;
-  margin-bottom: 30px;
+/* Card enhancements */
+.card {
+  border: none; /* Remove default card border */
+  border-radius: 10px; /* Rounded corners */
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15); /* Deeper shadow for depth */
+  overflow: hidden; /* Ensures rounded corners are respected */
 }
 
-.App-header h1 {
-  margin: 0;
-  font-size: 2.5em;
+/* Form control focus */
+.form-control:focus {
+  border-color: #007bff; /* Highlight border on focus */
+  box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.25); /* Subtle glow on focus */
 }
 
-.App-header p {
-  margin-top: 10px;
-  font-size: 1.2em;
+/* Button styling */
+.btn-primary {
+  background-color: #007bff; /* Consistent primary color */
+  border-color: #007bff;
+  transition: all 0.3s ease; /* Smooth transitions */
 }
 
-main {
-  padding: 20px;
-  max-width: 900px;
-  margin: 0 auto;
-}
-
-.app-list,
-.login-section {
-  background-color: #f9f9f9;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 20px;
-  margin-bottom: 30px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.app-list h2,
-.login-section h2 {
-  color: #282c34;
-  margin-top: 0;
-  margin-bottom: 20px;
-}
-
-.app-list ul {
-  list-style: none;
-  padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 15px;
-}
-
-.app-list li {
-  background-color: #007bff;
-  color: white;
-  padding: 15px 25px;
-  border-radius: 5px;
-  font-size: 1.1em;
-  transition: background-color 0.3s ease;
-}
-
-.app-list li:hover {
+.btn-primary:hover {
   background-color: #0056b3;
+  border-color: #004085;
+  transform: translateY(-2px); /* Slight lift on hover */
 }
 
-.app-list li a {
-  color: white;
-  text-decoration: none;
-  display: block;
-}
-
-.login-section p {
-  font-size: 1.1em;
-  line-height: 1.5;
-  margin-bottom: 20px;
-}
-
-.login-section button {
+.btn-success {
   background-color: #28a745;
-  color: white;
-  border: none;
-  padding: 12px 25px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 1.1em;
-  transition: background-color 0.3s ease;
+  border-color: #28a745;
+  transition: all 0.3s ease;
 }
 
-.login-section button:hover {
+.btn-success:hover {
   background-color: #218838;
+  border-color: #1e7e34;
+  transform: translateY(-2px);
 }
 
-footer {
-  background-color: #333;
-  color: white;
-  padding: 15px;
-  font-size: 0.9em;
-  margin-top: 30px;
+/* Text alignment and spacing */
+.text-center {
+  text-align: center;
+}
+
+.mb-4 {
+  margin-bottom: 1.5rem !important;
+}
+
+.mt-3 {
+  margin-top: 1rem !important;
+}
+
+.w-100 {
+  width: 100% !important;
+}
+
+/* Full height container for centering */
+.d-flex.justify-content-center.align-items-center {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+
+.form-control {
+  width: 100% !important; /* Use !important to override any conflicting styles */
+  box-sizing: border-box !important;
 }
