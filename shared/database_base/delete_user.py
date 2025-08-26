@@ -8,15 +8,19 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 from sqlalchemy.sql import or_
+
 from shared.database_base.database import SessionLocal
 from shared.database_base.models.user import User
+
 
 def delete_user(identifier):
     db = SessionLocal()
     try:
-        user_to_delete = db.query(User).filter(
-            or_(User.username == identifier, User.email == identifier)
-        ).first()
+        user_to_delete = (
+            db.query(User)
+            .filter(or_(User.username == identifier, User.email == identifier))
+            .first()
+        )
 
         if user_to_delete:
             print(f"Deleting user: {user_to_delete.username} ({user_to_delete.email})")
@@ -31,8 +35,9 @@ def delete_user(identifier):
     finally:
         db.close()
 
+
 if __name__ == "__main__":
     # Specify the username or email to delete here
-    user_to_delete = "" # Replace with the actual username or email
+    user_to_delete = ""  # Replace with the actual username or email
 
     delete_user(user_to_delete)

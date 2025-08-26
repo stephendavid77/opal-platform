@@ -1,0 +1,17 @@
+{
+    "name": "@opalsuite/frontend-base",
+    "version": "0.1.0",
+    "main": "src/index.js",
+    "private": true,
+    "exports": {
+        ".": "./src/index.js",
+        "./src/config": "./src/config.js",
+        "./src/api/apiClient": "./src/api/apiClient.js",
+    },
+    "dependencies": {
+        "react": "^19.1.1",
+        "react-dom": "^19.1.1",
+        "bootstrap": "^5.3.8",
+        "react-bootstrap": "^2.10.10",
+    },
+}

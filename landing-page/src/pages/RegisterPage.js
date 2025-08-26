@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react'; // Import useEffect
 import { Container, Form, Button, Alert, Card, Row } from 'react-bootstrap';
-import { Link, useLocation } from 'react-router-dom'; // Import useLocation
+import { useLocation } from 'react-router-dom'; // Import useLocation
+import { jwtDecode } from 'jwt-decode'; // Import jwtDecode
 
 const RegisterPage = () => {
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+    
     const [message, setMessage] = useState(null);
     const [error, setError] = useState(null);
     const [registrationSuccess, setRegistrationSuccess] = useState(false);
@@ -29,25 +30,27 @@ const RegisterPage = () => {
         setError(null);
 
         try {
+            console.log("Registering user with username:", username, "and email:", email);
             const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/auth/register`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ username, email, password }),
+                body: JSON.stringify({ username, email }),
             });
-
+            console.log("Registration Response:", response);
             const data = await response.json();
+            console.log("Registration Response Data:", data);
 
             if (!response.ok) {
-                throw new Error(data.detail || 'Registration failed');
+                throw new Error(JSON.stringify(data.detail) || 'Registration failed');
             }
 
-            setMessage('Registration successful! Please check your email for an OTP to activate your account.');
+            setMessage(JSON.stringify(data.message) || 'Registration successful! Please check your email for an OTP to verify your account.');
             setRegistrationSuccess(true); // Set success state to true
             localStorage.setItem('registeredEmail', email); // Store email in local storage
         } catch (err) {
-            setError(err.message);
+            setError(String(err));
         }
     };
 
@@ -56,6 +59,7 @@ const RegisterPage = () => {
         setMessage(null);
         setError(null);
         try {
+            console.log("Resending OTP for email:", email);
             const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/auth/request-otp`, {
                 method: 'POST',
                 headers: {
@@ -63,16 +67,17 @@ const RegisterPage = () => {
                 },
                 body: JSON.stringify({ email }),
             });
-
+            console.log("Resend OTP Response:", response);
             const data = await response.json();
+            console.log("Resend OTP Response Data:", data);
 
             if (!response.ok) {
-                throw new Error(data.detail || 'Failed to resend OTP');
+                throw new Error(JSON.stringify(data.detail) || 'Failed to resend OTP');
             }
 
-            setMessage('New OTP sent to your email. Please check your inbox.');
+            setMessage(JSON.stringify(data.message) || 'New OTP sent to your email. Please check your inbox.');
         } catch (err) {
-            setError(err.message);
+            setError(String(err));
         }
     };
     const handleOtpSubmit = async (e) => {
@@ -81,33 +86,46 @@ const RegisterPage = () => {
         setError(null);
 
         try {
-            const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/auth/activate-account`, {
+            console.log("Attempting OTP verification with email:", email, "and OTP:", otpCode);
+            const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/auth/token`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ email, otp_code: otpCode }),
+                body: JSON.stringify({ email, otp: otpCode }),
             });
-
+            console.log("OTP Verification Response:", response);
             const data = await response.json();
+            console.log("OTP Verification Response Data:", data);
 
             if (!response.ok) {
-                throw new Error(data.detail || 'OTP verification failed');
+                throw new Error(JSON.stringify(data.detail) || 'OTP verification failed');
             }
 
-            setMessage('Account activated successfully! You can now log in.');
+            // Store the token and roles (e.g., in localStorage)
+            localStorage.setItem('access_token', data.access_token);
+            localStorage.setItem('refresh_token', data.refresh_token);
+
+            // Decode the access token to get user roles
+            try {
+                const decodedToken = jwtDecode(data.access_token);
+                if (decodedToken.roles) {
+                    localStorage.setItem('user_roles', decodedToken.roles);
+                }
+            } catch (decodeError) {
+                console.error("Failed to decode JWT token:", decodeError);
+                // Clear invalid token
+                localStorage.removeItem('access_token');
+                localStorage.removeItem('refresh_token');
+                localStorage.removeItem('user_roles');
+            }
+
+            setMessage(JSON.stringify(data.message) || 'Account verified and logged in successfully!');
             setOtpCode(''); // Clear OTP field
-            // Optionally, redirect to login page
-            // Add a link to login page
-            setError(
-                <>
-                    Account activated successfully! You can now log in.
-                    <br />
-                    <Link to="/login">Click here to go to Login Page</Link>
-                </>
-            );
+            // Redirect to dashboard
+            window.location.href = '/portal'; // Use window.location.href for full page reload
         } catch (err) {
-            setError(err.message);
+            setError(String(err));
         }
     };
 
@@ -143,16 +161,7 @@ const RegisterPage = () => {
                                         />
                                     </Form.Group>
 
-                                    <Form.Group className="mb-3" controlId="formBasicPassword">
-                                        <Form.Label>Password</Form.Label>
-                                        <Form.Control
-                                            type="password"
-                                            placeholder="Password"
-                                            value={password}
-                                            onChange={(e) => setPassword(e.target.value)}
-                                            required
-                                        />
-                                    </Form.Group>
+                                    
 
                                     <Button variant="primary" type="submit" className="w-100 mt-3">
                                         Register

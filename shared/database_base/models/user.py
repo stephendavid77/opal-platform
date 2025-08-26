@@ -16,22 +16,16 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String(80), unique=True, nullable=False, index=True)
-    hashed_password = Column(String(256), nullable=False)
+
     is_active = Column(Boolean, default=False)
     email = Column(String(120), unique=True, nullable=False, index=True)  # Added email
     first_name = Column(String(80), nullable=True)
     last_name = Column(String(80), nullable=True)
     roles = Column(String(256), default="user")
     refresh_token = Column(String(512), nullable=True)  # Store hashed refresh token
-    refresh_token_expires_at = Column(DateTime, nullable=True) # Added new column
+    refresh_token_expires_at = Column(DateTime, nullable=True)  # Added new column
     otp_code = Column(String(6), nullable=True)
     otp_expiry = Column(DateTime, nullable=True)
-
-    def set_password(self, password):
-        self.hashed_password = pwd_context.hash(password)
-
-    def check_password(self, password):
-        return pwd_context.verify(password, self.hashed_password)
 
     def __repr__(self):
         return f"<User {self.username}>"

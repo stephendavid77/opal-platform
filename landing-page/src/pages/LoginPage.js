@@ -4,8 +4,9 @@ import { Link, useNavigate } from 'react-router-dom'; // Import useNavigate
 import { jwtDecode } from 'jwt-decode'; // Import jwtDecode
 
 const LoginPage = () => {
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
+    const [email, setEmail] = useState('');
+    const [otp, setOtp] = useState('');
+    const [otpSent, setOtpSent] = useState(false);
     const [message, setMessage] = useState(null);
     const [error, setError] = useState(null);
     const [isLoggedIn, setIsLoggedIn] = useState(false); // New state for login status
@@ -35,42 +36,62 @@ const LoginPage = () => {
         }
     }, []); // Run once on mount
 
-    const handleSubmit = async (e) => {
+    const handleRequestOtp = async (e) => {
         e.preventDefault();
         setMessage(null);
         setError(null);
 
         try {
+            console.log("Requesting OTP for email:", email);
+            const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/auth/request-otp`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email }),
+            });
+            console.log("OTP Request Response:", response);
+            const data = await response.json();
+            console.log("OTP Request Response Data:", data);
+
+            if (!response.ok) {
+                throw new Error(JSON.stringify(data.detail) || 'Failed to request OTP');
+            }
+
+            setMessage(JSON.stringify(data.message) || 'OTP sent to your email!');
+            setOtpSent(true);
+        } catch (err) {
+            setError(String(err));
+        }
+    };
+
+    const handleLogin = async (e) => {
+        e.preventDefault();
+        setMessage(null);
+        setError(null);
+
+        try {
+            console.log("Attempting login with email:", email, "and OTP:", otp);
             const details = {
-                'username': username,
-                'password': password
+                'email': email,
+                'otp': otp
             };
 
             const formBody = Object.keys(details).map(key => encodeURIComponent(key) + '=' + encodeURIComponent(details[key])).join('&');
 
-            const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/auth/token`, {
+            const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/auth/login-otp`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Content-Type': 'application/json',
                 },
-                body: formBody,
+                body: JSON.stringify({ email, otp }),
             });
-
+            console.log("Login Response:", response);
             const data = await response.json();
+            console.log("Login Response Data:", data);
 
             if (!response.ok) {
-                if (data.detail === "Account is not active. Please activate your account via OTP.") {
-                    setError(
-                        <>
-                            Account is not active. Please check your email for OTP and activate your account.
-                            <br />
-                            <Link to="/register?activate=true">Click here to activate your account</Link>
-                        </>
-                    );
-                } else {
-                    throw new Error(data.detail || 'Login failed');
-                }
-                return; // Stop execution if account is inactive
+                throw new Error(JSON.stringify(data.detail) || 'Login failed');
             }
 
             // Store the token and roles (e.g., in localStorage)
@@ -98,11 +119,12 @@ const LoginPage = () => {
 
             setMessage('Login successful!');
             setIsLoggedIn(true); // Update login state
-            setUsername('');
-            setPassword('');
-            navigate('/dashboard'); // Redirect to dashboard
+            setEmail('');
+            setOtp('');
+            setOtpSent(false); // Reset OTP sent state
+            navigate('/portal'); // Redirect to portal
         } catch (err) {
-            setError(err.message);
+            setError(String(err));
         }
     };
 
@@ -137,35 +159,35 @@ const LoginPage = () => {
                                 </Button>
                             </div>
                         ) : (
-                            <Form onSubmit={handleSubmit}>
-                                <Form.Group className="mb-3" controlId="formBasicUsername">
-                                    <Form.Label>Username</Form.Label>
+                            <Form onSubmit={otpSent ? handleLogin : handleRequestOtp}>
+                                <Form.Group className="mb-3" controlId="formBasicEmail">
+                                    <Form.Label>Email address</Form.Label>
                                     <Form.Control
-                                        type="text"
-                                        placeholder="Enter username"
-                                        value={username}
-                                        onChange={(e) => setUsername(e.target.value)}
+                                        type="email"
+                                        placeholder="Enter email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
                                         required
+                                        disabled={otpSent} // Disable email input after OTP is sent
                                     />
                                 </Form.Group>
 
-                                <Form.Group className="mb-3" controlId="formBasicPassword">
-                                    <Form.Label>Password</Form.Label>
-                                    <Form.Control
-                                        type="password"
-                                        placeholder="Password"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        required
-                                    />
-                                </Form.Group>
+                                {otpSent && (
+                                    <Form.Group className="mb-3" controlId="formBasicOtp">
+                                        <Form.Label>OTP</Form.Label>
+                                        <Form.Control
+                                            type="text"
+                                            placeholder="Enter OTP"
+                                            value={otp}
+                                            onChange={(e) => setOtp(e.target.value)}
+                                            required
+                                        />
+                                    </Form.Group>
+                                )}
 
                                 <Button variant="primary" type="submit" className="w-100 mt-3">
-                                    Login
+                                    {otpSent ? 'Login with OTP' : 'Request OTP'}
                                 </Button>
-                                <p className="text-center mt-3">
-                                    <Link to="/forgot-password">Forgot Password?</Link>
-                                </p>
                                 <p className="text-center mt-3">
                                     Don't have an account? <Link to="/register">Register here</Link>
                                 </p>

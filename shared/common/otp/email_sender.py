@@ -1,19 +1,22 @@
-import os
 import smtplib
 from email.mime.text import MIMEText
 
 from shared.common.otp.otp_sender import OTPSender
+from shared.secrets_manager import get_secret  # Corrected import
 
 
 class EmailOTPSender(OTPSender):
     """Concrete implementation for sending OTPs via email."""
 
     def __init__(self):
-        self.smtp_server = os.getenv("SMTP_SERVER")
-        self.smtp_port = int(os.getenv("SMTP_PORT", 587))
-        self.smtp_username = os.getenv("SMTP_USERNAME")
-        self.smtp_password = os.getenv("SMTP_PASSWORD")
-        self.sender_email = os.getenv("SENDER_EMAIL")
+        self.smtp_server = get_secret("EMAIL_SMTP_SERVER")
+        smtp_port_str = get_secret("EMAIL_SMTP_PORT")
+        self.smtp_port = int(smtp_port_str) if smtp_port_str else 587
+        self.smtp_username = get_secret(
+            "EMAIL_SENDER_EMAIL"
+        )  # Assuming username is sender email
+        self.smtp_password = get_secret("EMAIL_SENDER_PASSWORD")
+        self.sender_email = get_secret("EMAIL_SENDER_EMAIL")
 
         if not all(
             [
@@ -24,7 +27,7 @@ class EmailOTPSender(OTPSender):
             ]
         ):
             raise ValueError(
-                "SMTP environment variables are not fully configured for EmailOTPSender."
+                "SMTP environment variables are not fully configured for EmailOTPSender. Please ensure they are set via secrets_manager."
             )
 
     async def send_otp(self, recipient: str, otp_code: str, user_id: str):
@@ -43,7 +46,9 @@ class EmailOTPSender(OTPSender):
                 server.login(self.smtp_username, self.smtp_password)
                 server.send_message(msg)
             print(f"OTP sent to {recipient} for user {user_id}")
+            print("--- otp_sender.send_otp() returning True ---")  # Add this
             return True
         except Exception as e:
             print(f"Failed to send OTP to {recipient}: {e}")
+            print("--- otp_sender.send_otp() returning False ---")  # Add this
             return False

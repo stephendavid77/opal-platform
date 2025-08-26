@@ -54,3 +54,14 @@ CalMind/token.json
 *.xlsx
 *.pdf
 build_summary.md
+
+# Folders not being worked on
+BuildPilot/
+CalMind/
+landing-page/
+MonitorIQ/
+RegressionInsight/
+StandupBot/
+XrayQC/
+auth_service/
+scripts/

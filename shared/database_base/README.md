@@ -1,41 +1,51 @@
-# OpalSuite Shared Database Base
+# `database_base` Module
 
-## Overview
+## Purpose
 
-The `shared/database_base/` module establishes the foundation for `OpalSuite`'s common database. Its primary goal is to eliminate data duplication across sub-applications and provide a single, consistent mechanism for database connectivity and ORM model definition. This centralization simplifies data management, ensures data integrity, and facilitates cross-application data access.
+The `database_base` module provides the centralized database configuration and SQLAlchemy ORM models for the entire OpalSuite monorepo. Its primary goal is to ensure consistent database interactions and schema definitions across all sub-applications.
 
-## Architecture
+## Location
 
-### 1. Database Connection and Session Management (`database.py`)
+`shared/database_base/`
 
-*   **SQLAlchemy Engine:** Defines the central SQLAlchemy `engine` for connecting to the database. This engine is configured to point to the shared `opal_suite.db` (or a Cloud SQL instance in production).
-*   **SessionLocal:** A session factory for creating database sessions. This ensures that each request or operation gets its own isolated database session.
-*   **Base:** The declarative base (`Base`) for defining SQLAlchemy ORM models. All shared and application-specific models within `OpalSuite` should inherit from this `Base`.
-*   **`get_db()` Dependency:** A FastAPI dependency function that provides a database session (`Session`) to API endpoints, ensuring proper session lifecycle management (creation, yielding, and closing).
+## Key Components
 
-### 2. Common Database Models (`models/`)
+*   **`database.py`**: This file defines the core SQLAlchemy components necessary for database connectivity:
+    *   `engine`: The SQLAlchemy engine for connecting to the database.
+    *   `SessionLocal`: A session factory for creating database sessions.
+    *   `Base`: The declarative base for defining SQLAlchemy ORM models.
+    *   `get_db()`: A FastAPI dependency for managing database sessions within API routes.
 
-*   **Shared Entities:** The `models/` subdirectory contains SQLAlchemy ORM models for entities that are common across multiple `OpalSuite` applications. A prime example is the `User` model, which is central to the authentication service.
-*   **Inheritance:** All models defined here, and in individual sub-applications, inherit from the `Base` defined in `database.py`.
+*   **`models/`**: This directory contains the SQLAlchemy ORM models (e.g., `user.py` for the `User` model) that define the database schema for entities shared across the OpalSuite platform.
 
-## How it Fits into OpalSuite
+## Configuration
 
-*   **Single Source of Truth:** Ensures that all applications operate on the same, consistent dataset, preventing data silos and inconsistencies.
-*   **Simplified Data Management:** Centralizes database schema definitions and connection logic, making it easier to manage and evolve the database.
-*   **Cross-Application Data Access:** Facilitates seamless data sharing and interaction between different sub-applications.
-*   **Scalability:** Designed to connect to a robust database solution (like Cloud SQL), supporting the scalability needs of the entire platform.
+The `SQLALCHEMY_DATABASE_URL` is dynamically configured using the `secrets_manager` module. This allows for flexible deployment across different environments (local development, staging, production) without code changes.
 
-## Getting Started (Development)
+*   **Local Development**: The `DATABASE_URL` can be specified in a `.env` file at the project root (e.g., `DATABASE_URL=sqlite:///./shared/database_base/data/opal_suite.db`).
+*   **Cloud Deployment**: In cloud environments, the `secrets_manager` will retrieve the `DATABASE_URL` from a configured cloud secret manager (e.g., Google Cloud Secret Manager).
 
-1.  **Database URL:** Ensure the `SQLALCHEMY_DATABASE_URL` in `database.py` is correctly configured for your development environment (e.g., `sqlite:///./opal_suite.db`).
-2.  **Initialize Database:** Run the `init_shared_db.py` script from the `OpalSuite` root to create the necessary tables in the shared database:
-    ```bash
-    python init_shared_db.py
-    ```
-3.  **Integrate Models:** When creating or refactoring models in sub-applications, ensure they import `Base` from `OpalSuite.shared.database_base.database` and inherit from it.
+## Usage
 
-## Future Enhancements
+Other modules and sub-applications can interact with the database by importing `get_db` for dependency injection in FastAPI routes and importing models from `shared.database_base.models`.
 
-*   **Alembic Migrations:** Implement Alembic for robust database schema migrations, especially crucial for managing changes to shared models.
-*   **Database Connection Pooling:** Optimize database connections for high-traffic scenarios.
-*   **Read Replicas/Sharding:** Explore advanced database scaling strategies for very large datasets or high read loads.
+Example (FastAPI route):
+
+```python
+from fastapi import Depends
+from sqlalchemy.orm import Session
+
+from shared.database_base.database import get_db
+from shared.database_base.models.user import User
+
+# ... (FastAPI app setup)
+
+@app.get("/users/{user_id}")
+async def read_user(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    return user
+```
+
+## Testing
+
+Dedicated unit tests for the `database_base` module are located in `shared/database_base/tests/`. These tests ensure the core functionalities of the database module, including CRUD operations and session management, are working correctly in an isolated environment (using an in-memory SQLite database).

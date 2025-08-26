@@ -1,9 +1,0 @@
-fastapi
-uvicorn
-sqlalchemy
-passlib[bcrypt]
-python-jose[cryptography]
-pydantic
-email-validator
-python-dotenv
-redis

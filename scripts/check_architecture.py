@@ -1,7 +1,7 @@
-import os
-import sys
 import ast
+import os
 import re
+import sys
 
 
 def find_files(root_dir, extensions):
@@ -67,7 +67,14 @@ def check_shell_scripts_for_violations():
     shared_scripts_dir = os.path.join(repo_root, "shared", "scripts")
 
     # Patterns for commands that should be centralized
-    docker_commands = ["docker build", "docker run", "docker stop", "docker rm", "docker push", "docker wait"]
+    docker_commands = [
+        "docker build",
+        "docker run",
+        "docker stop",
+        "docker rm",
+        "docker push",
+        "docker wait",
+    ]
     gcloud_commands = ["gcloud run deploy", "gcloud auth"]
 
     # Allowed script names where these commands are expected
@@ -76,7 +83,7 @@ def check_shell_scripts_for_violations():
 
     for dirpath, _, filenames in os.walk(repo_root):
         if shared_scripts_dir in dirpath:
-            continue # Skip shared scripts directory
+            continue  # Skip shared scripts directory
 
         for filename in filenames:
             if filename.endswith(".sh"):
@@ -91,7 +98,7 @@ def check_shell_scripts_for_violations():
                             violations.append(
                                 f"Violation in {file_path}: Direct '{cmd}' command found. Please use the common docker script."
                             )
-                
+
                 # Check for gcloud commands
                 if filename not in allowed_gcloud_scripts:
                     for cmd in gcloud_commands:
@@ -114,6 +121,7 @@ def check_architecture():
     # Known exceptions for authentication modules (to be refactored later)
     AUTH_EXCEPTIONS = [
         "MonitorIQ/auth",
+        "shared/tests/auth",  # Added to exclude test directory
     ]
 
     for dirpath, dirnames, filenames in os.walk(repo_root):

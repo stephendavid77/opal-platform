@@ -1,10 +1,11 @@
+import logging
 import os
-import uuid  # Moved import to top
+import uuid
 from datetime import datetime, timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -13,39 +14,33 @@ from shared.common.otp.email_sender import EmailOTPSender
 from shared.common.otp.otp_manager import generate_otp as otp_generate_code
 from shared.common.otp.otp_manager import validate_otp as otp_validate_code
 from shared.database_base.database import get_db
-from shared.database_base.models.user import User, pwd_context
+from shared.database_base.models.user import User
 
-otp_sender = EmailOTPSender()  # Instantiate the OTP sender
+otp_sender = EmailOTPSender()
 
-# --- JWT Configuration ---
 SECRET_KEY = os.getenv("SECRET_KEY", "super-secret-key")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
-# -----------------------------------------------------------------
-
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
 
 class UserCreate(BaseModel):
     username: str
     email: str
-    password: str
     first_name: str | None = None
     last_name: str | None = None
-    role: str = "user"
+    roles: str = "user"
 
 
-class UserResponse(BaseModel):  # New model for responses
+class UserResponse(BaseModel):
     username: str
     email: str
     first_name: str | None = None
     last_name: str | None = None
-    role: str
+    roles: str  # Changed from 'role' to 'roles'
 
     class Config:
-        from_attributes = True  # For Pydantic v2, use from_attributes = True instead of orm_mode = True
+        from_attributes = True
 
 
 class Token(BaseModel):
@@ -55,9 +50,22 @@ class Token(BaseModel):
 
 
 class TokenData(BaseModel):
-    user_id: uuid.UUID | None = None
+    user_id: int | None = None
     username: str | None = None
-    role: str | None = None
+    roles: str | None = None
+
+
+class OTPRequest(BaseModel):
+    email: str
+
+
+class OTPLoginRequest(BaseModel):
+    email: str
+    otp: str
+
+
+router = APIRouter(prefix="/auth", tags=["auth"])
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login-otp")
 
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
@@ -92,32 +100,29 @@ async def get_current_user(
     )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: str = payload.get("user_id")
+        user_id: str = payload.get("user_id")  # Assuming user_id is in token payload
         username: str = payload.get("sub")
-        role: str = payload.get("role")
-        if user_id is None or username is None or role is None:
+        roles: str = payload.get("roles")  # Changed from 'role' to 'roles'
+        if user_id is None or username is None or roles is None:
             raise credentials_exception
-        token_data = TokenData(user_id=uuid.UUID(user_id), username=username, role=role)
+        token_data = TokenData(user_id=int(user_id), username=username, roles=roles)
     except JWTError:
         raise credentials_exception
-    user = db.query(User).filter(User.user_id == str(token_data.user_id)).first()
+    user = db.query(User).filter(User.id == int(user_id)).first()  # Use User.id
     if user is None:
         raise credentials_exception
     return user
 
 
 async def require_super_user(current_user: Annotated[User, Depends(get_current_user)]):
-    if current_user.role != "super_user":
+    if current_user.roles != "super_user":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions"
         )
     return current_user
 
 
-router = APIRouter(prefix="/auth", tags=["auth"])
-
-
-@router.post("/register", response_model=Token)
+@router.post("/register")
 async def register_user(user: UserCreate, db: Session = Depends(get_db)):
     db_user = db.query(User).filter(User.username == user.username).first()
     if db_user:
@@ -133,69 +138,81 @@ async def register_user(user: UserCreate, db: Session = Depends(get_db)):
         )
 
     new_user = User(
-        user_id=str(uuid.uuid4()),  # Convert UUID to string
         username=user.username,
         email=user.email,
         first_name=user.first_name,
         last_name=user.last_name,
-        role=user.role,
+        roles=user.roles,
     )
-    new_user.set_password(user.password)
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
 
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={
-            "user_id": str(new_user.user_id),
-            "sub": new_user.username,
-            "role": new_user.role,
-        },
-        expires_delta=access_token_expires,
-    )
-    refresh_token_expires = timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
-    refresh_token = create_refresh_token(
-        data={"user_id": str(new_user.user_id), "sub": new_user.username},
-        expires_delta=refresh_token_expires,
-    )
-    new_user.refresh_token = pwd_context.hash(refresh_token)
-    db.commit()
-    db.refresh(new_user)
+    try:
+        otp_code = otp_generate_code(db, new_user)
+        otp_sender.send_otp(new_user.email, otp_code, new_user.id)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to send OTP for verification: {e}",
+        )
 
     return {
-        "access_token": access_token,
-        "refresh_token": refresh_token,
-        "token_type": "bearer",
+        "message": "User registered. An OTP has been sent to your email for verification."
     }
 
 
-@router.post("/token", response_model=Token)
-async def login_for_access_token(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-    db: Session = Depends(get_db),
+@router.post("/request-otp")
+async def request_otp(otp_request: OTPRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == otp_request.email).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_200_OK,
+            detail="If a user with that email exists, an OTP has been sent.",
+        )
+    otp_code = otp_generate_code(db, user)
+    try:
+        sent_successfully = await otp_sender.send_otp(
+            otp_request.email, otp_code, user.id
+        )
+        if not sent_successfully:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to send OTP due to an internal issue.",
+            )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to send OTP: {e}",
+        )
+    return {"message": "If a user with that email exists, an OTP has been sent."}
+
+
+@router.post("/login-otp", response_model=Token)
+async def login_with_otp(
+    otp_login_request: OTPLoginRequest, db: Session = Depends(get_db)
 ):
-    user = db.query(User).filter(User.username == form_data.username).first()
-    if not user or not user.check_password(form_data.password):
+    user = db.query(User).filter(User.email == otp_login_request.email).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+    if not otp_validate_code(db, user, otp_login_request.otp):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
+            detail="Invalid OTP or email",
         )
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"user_id": str(user.user_id), "sub": user.username, "role": user.role},
+        data={"sub": user.username, "user_id": str(user.id), "roles": user.roles},
         expires_delta=access_token_expires,
     )
     refresh_token_expires = timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
     refresh_token = create_refresh_token(
-        data={"user_id": str(user.user_id), "sub": user.username},
+        data={"sub": user.username, "user_id": str(user.id), "roles": user.roles},
         expires_delta=refresh_token_expires,
     )
-    user.refresh_token = pwd_context.hash(refresh_token)
-    db.commit()
-    db.refresh(user)
-
     return {
         "access_token": access_token,
         "refresh_token": refresh_token,
@@ -203,9 +220,21 @@ async def login_for_access_token(
     }
 
 
+@router.get("/users/me/", response_model=UserResponse)
+async def read_users_me(current_user: Annotated[User, Depends(get_current_user)]):
+    return current_user
+
+
+@router.get("/users/me/super-user-only/", response_model=UserResponse)
+async def read_super_user_me(
+    current_user: Annotated[User, Depends(require_super_user)]
+):
+    return current_user
+
+
 @router.post("/refresh-token", response_model=Token)
-async def refresh_access_token(
-    refresh_token: Annotated[str, Depends(oauth2_scheme)], db: Session = Depends(get_db)
+async def refresh_token(
+    token: Annotated[str, Depends(oauth2_scheme)], db: Session = Depends(get_db)
 ):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -213,48 +242,36 @@ async def refresh_access_token(
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id: str = payload.get("user_id")
         username: str = payload.get("sub")
-        if user_id is None or username is None:
+        roles: str = payload.get("roles")
+        if user_id is None or username is None or roles is None:
             raise credentials_exception
-        token_data = TokenData(user_id=uuid.UUID(user_id), username=username)
+        token_data = TokenData(user_id=int(user_id), username=username, roles=roles)
     except JWTError:
         raise credentials_exception
-
-    user = db.query(User).filter(User.user_id == str(token_data.user_id)).first()
-    if (
-        user is None
-        or not user.refresh_token
-        or not pwd_context.verify(refresh_token, user.refresh_token)
-    ):
+    user = db.query(User).filter(User.id == int(user_id)).first()
+    if user is None:
         raise credentials_exception
 
+    # Ensure it's a refresh token (optional, but good practice)
+    # You might have a 'token_type' claim in your refresh token
+    # if payload.get("token_type") != "refresh":
+    #     raise credentials_exception
+
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"user_id": str(user.user_id), "sub": user.username, "role": user.role},
+    new_access_token = create_access_token(
+        data={"sub": user.username, "user_id": str(user.id), "roles": user.roles},
         expires_delta=access_token_expires,
     )
-    # Optionally, issue a new refresh token as well, and update in DB
-    # For simplicity, we are just issuing a new access token here.
+    refresh_token_expires = timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    new_refresh_token = create_refresh_token(
+        data={"sub": user.username, "user_id": str(user.id), "roles": user.roles},
+        expires_delta=refresh_token_expires,
+    )
     return {
-        "access_token": access_token,
-        "refresh_token": refresh_token,
+        "access_token": new_access_token,
+        "refresh_token": new_refresh_token,
         "token_type": "bearer",
     }
-
-
-@router.get(
-    "/users/me/", response_model=UserResponse
-)  # Changed response model to UserResponse
-async def read_users_me(current_user: Annotated[User, Depends(get_current_user)]):
-    return current_user
-
-
-@router.get(
-    "/users/me/super-user-only/", response_model=UserResponse
-)  # Added super user only endpoint
-async def read_users_me_super_user_only(
-    current_user: Annotated[User, Depends(require_super_user)]
-):
-    return current_user
