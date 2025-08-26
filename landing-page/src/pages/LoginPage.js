@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'; // Import useEffect
 import { Container, Form, Button, Alert, Card, Row } from 'react-bootstrap';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom'; // Import useNavigate
 import { jwtDecode } from 'jwt-decode'; // Import jwtDecode
 
 const LoginPage = () => {
@@ -10,6 +10,8 @@ const LoginPage = () => {
     const [error, setError] = useState(null);
     const [isLoggedIn, setIsLoggedIn] = useState(false); // New state for login status
     const [isSuperuser, setIsSuperuser] = useState(false); // New state for superuser status
+
+    const navigate = useNavigate(); // Get navigate function
 
     useEffect(() => {
         // Check login status on component mount
@@ -98,6 +100,7 @@ const LoginPage = () => {
             setIsLoggedIn(true); // Update login state
             setUsername('');
             setPassword('');
+            navigate('/dashboard'); // Redirect to dashboard
         } catch (err) {
             setError(err.message);
         }

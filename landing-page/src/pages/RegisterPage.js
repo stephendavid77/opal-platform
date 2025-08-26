@@ -53,7 +53,6 @@ const RegisterPage = () => {
 
     const [otpCode, setOtpCode] = useState('');
     const handleResendOtp = async () => { // New function
-        console.log('Resending OTP for email:', email); // Debugging line
         setMessage(null);
         setError(null);
         try {
