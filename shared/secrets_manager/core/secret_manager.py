@@ -1,4 +1,5 @@
 import json
+import os # Import os
 from typing import Dict, List, Optional
 
 from shared.secrets_manager.backends.cloud_backend import CloudBackend
@@ -13,10 +14,20 @@ class SecretManager:
         self.backends = [
             EnvBackend(),
             KeychainBackend(),
-            CloudBackend(project_id=project_id),  # Cloud backend is last priority
         ]
+
+        # Determine environment from OPALSUITE_ENV environment variable
+        # Default to 'local' if not set
+        opal_suite_env = os.environ.get("OPALSUITE_ENV", "local").lower()
+
+        if opal_suite_env == "cloud":
+            self.backends.append(CloudBackend(project_id=project_id))
+            logger.info("Cloud environment detected. CloudBackend enabled.")
+        else:
+            logger.info("Local environment detected. CloudBackend disabled.")
+
         logger.info(
-            "SecretManager initialized with backend priority: Env -> Keychain -> Cloud."
+            "SecretManager initialized with backend priority: Env -> Keychain -> Cloud (if enabled)."
         )
 
     @cached_secret()

@@ -82,3 +82,24 @@
 ### Tue Aug 26 08:13:49 PDT 2025
 - File edited: landing-page/src/App.js
 - Change: Corrected syntax error in App.js (apostrophe in string).
+### Tue Aug 26 08:53:03 PDT 2025
+- File edited: auth_service/db/models.py
+- Change: Changed default for is_active to False in User model.
+### Tue Aug 26 08:56:18 PDT 2025
+- File edited: auth_service/main.py
+- Change: Added CORS middleware to auth_service/main.py.
+### Tue Aug 26 08:58:00 PDT 2025
+- File edited: auth_service/main.py
+- Change: Added prefix to auth_routes.router in auth_service/main.py.
+### Tue Aug 26 08:59:30 PDT 2025
+- File edited: run_standalone.sh
+- Change: Modified root run_standalone.sh to allow running a specific subproject in the foreground for debugging.
+### Tue Aug 26 09:01:10 PDT 2025
+- File edited: auth_service/run_standalone.sh
+- Change: Added more aggressive process killing and a sleep command to ensure clean restarts.
+### Tue Aug 26 09:06:06 PDT 2025
+- File edited: init_shared_db.py
+- Change: Modified init_shared_db.py to correctly import modules by adjusting Python path.
+### Tue Aug 26 09:07:40 PDT 2025
+- File edited: auth_service/db/database.py
+- Change: Modified auth_service/db/database.py to point to opal_suite.db in the project root.

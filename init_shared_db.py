@@ -1,14 +1,18 @@
-from OpalSuite.shared.database_base.database import Base, engine
-from OpalSuite.shared.database_base.models.user import (  # noqa: F401; Import User model to ensure it's registered with Base
-    User,
-)
+import os
+import sys
+import subprocess
 
+# Add the directory containing this script to the Python path
+script_dir = os.path.dirname(__file__)
+if script_dir not in sys.path:
+    sys.path.insert(0, script_dir)
 
-def init_db():
-    print("Initializing the shared OpalSuite database...")
-    Base.metadata.create_all(bind=engine)
-    print("Shared OpalSuite database initialized successfully.")
+# Run the prerequisite shell script
+prereq_script_path = os.path.join(script_dir, "shared", "scripts", "init_db_prerequisites.sh")
+subprocess.run([prereq_script_path], check=True)
 
+# Now import relative to the project root
+from shared.database_base.create_tables import create_db_tables
 
 if __name__ == "__main__":
-    init_db()
+    create_db_tables()

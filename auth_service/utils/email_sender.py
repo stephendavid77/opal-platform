@@ -2,27 +2,28 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-# --- Email Configuration (MOVE TO A SECURE CONFIGURATION/SECRET MANAGEMENT SYSTEM) ---
-SMTP_SERVER = "smtp.mailtrap.io"
-SMTP_PORT = 2525
-SMTP_USERNAME = "your_mailtrap_username"
-SMTP_PASSWORD = "your_mailtrap_password"
-# -----------------------------------------------------------------
+from shared.secrets_manager import get_secret
+
+# --- Email Configuration (Retrieved from Secrets Manager) ---
 
 
 async def send_email(to_email: str, subject: str, body: str):
-    """Sends an email using SMTP."""
+    # Retrieve secrets
+    smtp_server = get_secret("EMAIL_SMTP_SERVER")
+    smtp_port = int(get_secret("EMAIL_SMTP_PORT")) # Port should be an integer
+    smtp_username = get_secret("EMAIL_SENDER_EMAIL")
+    smtp_password = get_secret("EMAIL_SENDER_PASSWORD")
     msg = MIMEMultipart()
-    msg["From"] = SMTP_USERNAME
+    msg["From"] = smtp_username # Use retrieved username
     msg["To"] = to_email
     msg["Subject"] = subject
 
     msg.attach(MIMEText(body, "plain"))
 
     try:
-        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+        with smtplib.SMTP(smtp_server, smtp_port) as server: # Use retrieved server and port
             server.starttls()  # Secure the connection
-            server.login(SMTP_USERNAME, SMTP_PASSWORD)
+            server.login(smtp_username, smtp_password) # Use retrieved username and password
             server.send_message(msg)
         return True, "Email sent successfully."
     except Exception as e:

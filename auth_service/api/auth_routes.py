@@ -1,15 +1,17 @@
 from datetime import datetime, timedelta
-from typing import Annotated
+from typing import Annotated, List
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from shared.secrets_manager.utils.logger import logger
+
 from auth_service.adapters.otp import generate_and_send_otp
 from auth_service.adapters.otp import verify_otp as verify_otp_code
-from auth_service.db.database import get_db
-from auth_service.db.models import RefreshToken, User
+from shared.database_base.database import get_db
+from shared.database_base.models.user import User
 from auth_service.utils.jwt_helpers import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     ALGORITHM,
@@ -75,6 +77,7 @@ async def get_current_user(
 
 @router.post("/register", response_model=Token)
 async def register_user(user: UserCreate, db: Session = Depends(get_db)):
+    logger.info(f"Attempting to register user: {user.username} with email: {user.email}")
     db_user = db.query(User).filter(User.username == user.username).first()
     if db_user:
         raise HTTPException(
@@ -100,13 +103,10 @@ async def register_user(user: UserCreate, db: Session = Depends(get_db)):
         data={"sub": new_user.username}, expires_delta=refresh_token_expires
     )
 
-    db_refresh_token = RefreshToken(
-        user_id=new_user.id,
-        token=refresh_token,
-        expires_at=datetime.utcnow() + refresh_token_expires,
-    )
-    db.add(db_refresh_token)
+    new_user.refresh_token = refresh_token
+    new_user.refresh_token_expires_at = datetime.utcnow() + refresh_token_expires
     db.commit()
+    db.refresh(new_user) # Refresh to get the updated fields
 
     return {
         "access_token": access_token,
@@ -137,13 +137,10 @@ async def login_for_access_token(
         data={"sub": user.username}, expires_delta=refresh_token_expires
     )
 
-    db_refresh_token = RefreshToken(
-        user_id=user.id,
-        token=refresh_token,
-        expires_at=datetime.utcnow() + refresh_token_expires,
-    )
-    db.add(db_refresh_token)
+    user.refresh_token = refresh_token
+    user.refresh_token_expires_at = datetime.utcnow() + refresh_token_expires
     db.commit()
+    db.refresh(user) # Refresh to get the updated fields
 
     return {
         "access_token": access_token,
@@ -194,13 +191,10 @@ async def verify_otp(otp_verification: OTPVerification, db: Session = Depends(ge
             data={"sub": user.username}, expires_delta=refresh_token_expires
         )
 
-        db_refresh_token = RefreshToken(
-            user_id=user.id,
-            token=refresh_token,
-            expires_at=datetime.utcnow() + refresh_token_expires,
-        )
-        db.add(db_refresh_token)
+        user.refresh_token = refresh_token
+        user.refresh_token_expires_at = datetime.utcnow() + refresh_token_expires
         db.commit()
+        db.refresh(user) # Refresh to get the updated fields
 
         return {
             "access_token": access_token,
@@ -236,22 +230,15 @@ async def refresh_access_token(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
         )
 
-    db_refresh_token = (
-        db.query(RefreshToken)
-        .filter(
-            RefreshToken.token == refresh_token_request.refresh_token,
-            RefreshToken.user_id == user.id,
-        )
-        .first()
-    )
-    if not db_refresh_token or db_refresh_token.expires_at < datetime.utcnow():
+    if not user.refresh_token or user.refresh_token != refresh_token_request.refresh_token or user.refresh_token_expires_at < datetime.utcnow():
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Refresh token expired or invalid",
         )
 
-    # Optionally, revoke the old refresh token and issue a new one for security
-    db.delete(db_refresh_token)
+    # Revoke the old refresh token by clearing it
+    user.refresh_token = None
+    user.refresh_token_expires_at = None
     db.commit()
 
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -264,13 +251,10 @@ async def refresh_access_token(
         data={"sub": user.username}, expires_delta=new_refresh_token_expires
     )
 
-    new_db_refresh_token = RefreshToken(
-        user_id=user.id,
-        token=new_refresh_token,
-        expires_at=datetime.utcnow() + new_refresh_token_expires,
-    )
-    db.add(new_db_refresh_token)
+    user.refresh_token = new_refresh_token
+    user.refresh_token_expires_at = datetime.utcnow() + new_refresh_token_expires
     db.commit()
+    db.refresh(user) # Refresh to get the updated fields
 
     return {
         "access_token": access_token,
@@ -286,3 +270,44 @@ async def validate_token(current_user: Annotated[User, Depends(oauth2_scheme)]):
         "username": current_user.username,
         "roles": current_user.roles,
     }
+
+
+class UserResponse(BaseModel): # Define a Pydantic model for the response
+    id: int
+    username: str
+    email: str | None = None
+    is_active: bool
+    roles: str
+
+    class Config:
+        from_attributes = True # For SQLAlchemy 2.0 compatibility
+
+
+@router.get("/users", response_model=List[UserResponse])
+async def get_all_users(db: Session = Depends(get_db)):
+    users = db.query(User).all()
+    return users
+
+
+@router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user), # Requires authentication
+):
+    # Optional: Add authorization logic here (e.g., only admin or the user themselves can delete)
+    # if current_user.id != user_id and "admin" not in current_user.roles:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_403_FORBIDDEN,
+    #         detail="Not authorized to delete this user",
+    #     )
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+
+    db.delete(user)
+    db.commit()
+    return # No content for 204

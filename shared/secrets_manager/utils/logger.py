@@ -2,7 +2,7 @@ import logging
 
 # Configure a logger for the secrets manager
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 # Prevent logging secrets
