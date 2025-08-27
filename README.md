@@ -87,13 +87,17 @@ OpalSuite leverages a modern and robust technology stack to ensure high performa
     ```
 
 6.  **Start the Services:**
-    *   **Run the consolidated backend (standalone):**
+    *   **Run the shared backend (standalone):**
         ```bash
-        ./run_standalone.sh
+        ./shared/scripts/run_standalone_backend.sh
         ```
-    *   **Run all services (Docker):**
+    *   **Run the shared backend (Docker):**
         ```bash
-        ./run_webapp_docker.sh
+        ./shared/scripts/run_docker_backend.sh
+        ```
+    *   **Deploy the shared backend to GCP (Cloud Run):**
+        ```bash
+        ./shared/scripts/deploy_gcp_backend.sh
         ```
     *   **Run a specific frontend service (e.g., landing-page) without Docker:**
         ```bash

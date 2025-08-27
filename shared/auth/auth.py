@@ -10,6 +10,7 @@ from jose import JWTError, jwt
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from shared.secrets_manager import get_secret
 from shared.auth.otp.otp_manager import generate_otp as otp_generate_code
 from shared.auth.otp.otp_manager import validate_otp as otp_validate_code
 from shared.auth.otp.otp_sender_factory import get_otp_sender
@@ -19,10 +20,10 @@ from shared.database_base.models.user import User
 
 otp_sender = get_otp_sender()
 
-SECRET_KEY = os.getenv("SECRET_KEY", "super-secret-key")
-ALGORITHM = os.getenv("ALGORITHM", "HS256")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
-REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
+SECRET_KEY = get_secret("SECRET_KEY")
+ALGORITHM = get_secret("ALGORITHM")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(get_secret("ACCESS_TOKEN_EXPIRE_MINUTES"))
+REFRESH_TOKEN_EXPIRE_DAYS = int(get_secret("REFRESH_TOKEN_EXPIRE_DAYS"))
 
 
 class UserCreate(BaseModel):

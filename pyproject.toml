@@ -31,3 +31,10 @@ exclude = [
     "dist",
     "__pycache__",
 ]
+
+[tool.pytest.ini_options]
+python_files = "test_*.py"
+testpaths = [
+    "shared/auth/tests/",
+    "shared/database_base/tests/",
+]
