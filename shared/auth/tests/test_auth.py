@@ -7,7 +7,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from shared.common.auth.auth import (
+from shared.auth.auth import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     ALGORITHM,
     REFRESH_TOKEN_EXPIRE_DAYS,
@@ -19,8 +19,8 @@ from shared.common.auth.auth import (
     create_refresh_token,
     router,
 )
-from shared.common.otp.email_sender import EmailOTPSender
-from shared.common.otp.otp_manager import generate_otp, validate_otp
+from shared.auth.otp.email_sender import EmailOTPSender
+from shared.auth.otp.otp_manager import generate_otp, validate_otp
 from shared.database_base.database import Base, get_db
 from shared.database_base.models.user import User
 
@@ -66,7 +66,54 @@ def client_fixture(session):
     test_app.dependency_overrides[get_db] = override_get_db
 
     # Override the otp_sender in the auth module for testing
-    test_app.dependency_overrides[EmailOTPSender] = MockOTPSender
+    from shared.auth.otp.otp_manager import generate_otp, validate_otp
+
+
+from shared.auth.otp.otp_sender_factory import get_otp_sender
+
+
+# Mock the OTP sender to prevent actual email sending during tests
+class MockOTPSender(EmailOTPSender):
+    async def send_otp(self, recipient: str, otp_code: str, user_id: int) -> bool:
+        print(f"Mock OTP sent to {recipient} for user {user_id}")
+        return True
+
+
+# Setup test database
+SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
+
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+
+@pytest.fixture(name="session")
+def session_fixture():
+    Base.metadata.create_all(bind=engine)
+    db = TestingSessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+        Base.metadata.drop_all(bind=engine)
+
+
+@pytest.fixture(name="client")
+def client_fixture(session):
+    def override_get_db():
+        yield session
+
+    from fastapi import FastAPI
+
+    test_app = FastAPI()
+    test_app.include_router(router)
+    test_app.dependency_overrides[get_db] = override_get_db
+
+    # Override the otp_sender in the auth module for testing
+    test_app.dependency_overrides[get_otp_sender] = lambda: MockOTPSender()
 
     client = TestClient(test_app)
     yield client

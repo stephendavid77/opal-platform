@@ -1,7 +1,7 @@
 import smtplib
 from email.mime.text import MIMEText
 
-from shared.common.otp.otp_sender import OTPSender
+from shared.auth.otp.otp_sender import OTPSender
 from shared.secrets_manager import get_secret  # Corrected import
 
 

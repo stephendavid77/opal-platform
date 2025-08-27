@@ -6,3 +6,5 @@ python-jose[cryptography]
 python-dotenv
 keyring
 google-cloud-secret-manager
+pytest-asyncio
+twilio

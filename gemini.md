@@ -365,7 +365,7 @@ All contributors, scripts, and LLM assistants **must read and follow these rules
 - **Authentication:**
   - Central auth module only: `shared/common/auth/`
   - No subproject should implement its own auth logic.
-  - Must support username/password + email OTP.
+  - Must support email OTP.
   - Extensible for future SSO, MS OTP, or other providers.
   - Session management: JWT + refresh tokens, with role enforcement.
 - **Secrets Management:**

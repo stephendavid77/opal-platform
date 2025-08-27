@@ -10,13 +10,14 @@ from jose import JWTError, jwt
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from shared.common.otp.email_sender import EmailOTPSender
-from shared.common.otp.otp_manager import generate_otp as otp_generate_code
-from shared.common.otp.otp_manager import validate_otp as otp_validate_code
+from shared.auth.otp.otp_manager import generate_otp as otp_generate_code
+from shared.auth.otp.otp_manager import validate_otp as otp_validate_code
+from shared.auth.otp.otp_sender_factory import get_otp_sender
+from shared.auth.otp.senders.email.email_sender import EmailOTPSender
 from shared.database_base.database import get_db
 from shared.database_base.models.user import User
 
-otp_sender = EmailOTPSender()
+otp_sender = get_otp_sender()
 
 SECRET_KEY = os.getenv("SECRET_KEY", "super-secret-key")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")

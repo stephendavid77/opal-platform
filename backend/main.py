@@ -3,8 +3,8 @@ import logging
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from shared.common.auth.auth import get_current_user
-from shared.common.auth.auth import router as auth_router
+from shared.auth.auth import get_current_user
+from shared.auth.auth import router as auth_router
 from shared.database_base.models.user import User
 
 # Configure logging
@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.DEBUG)
 logging.getLogger("uvicorn").setLevel(logging.DEBUG)
 logging.getLogger("uvicorn.access").setLevel(logging.DEBUG)
 logging.getLogger("uvicorn.error").setLevel(logging.DEBUG)
-logging.getLogger("shared.common.auth").setLevel(logging.DEBUG)
+logging.getLogger("shared.auth").setLevel(logging.DEBUG)
 
 
 app = FastAPI(title="OpalSuite Shared Backend API")
