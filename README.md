@@ -29,6 +29,35 @@ OpalSuite is built upon a monorepo structure, emphasizing shared components and 
 *   **Consistent User Interface:** A centralized design system (`shared/frontend-base/`) based on React and Bootstrap ensures a unified user experience.
 *   **Landing Page:** A single entry point (`landing-page/`) for the entire platform, providing access to all applications and centralized authentication.
 
+## Technology Stack
+
+OpalSuite leverages a modern and robust technology stack to ensure high performance, scalability, and a consistent developer experience.
+
+### Frontend
+
+*   **React**: A declarative, component-based JavaScript library for building user interfaces.
+    *   **Why it's a good choice:** Its component-based architecture promotes reusability and maintainability, making it efficient for building complex and interactive UIs. Its large ecosystem and community support ensure continuous development and readily available resources.
+*   **Bootstrap**: A popular CSS framework for developing responsive, mobile-first websites.
+    *   **Why it's a good choice:** Provides a solid foundation for responsive design with pre-built components and a grid system, accelerating UI development and ensuring a consistent look and feel across the platform. It's easily customizable to fit OpalSuite's branding.
+*   **Custom CSS**: Tailored stylesheets for OpalSuite's unique branding and design elements.
+    *   **Why it's a good choice:** Allows for fine-grained control over the visual presentation, ensuring the platform adheres to specific brand guidelines and provides a distinctive user experience.
+
+### Backend
+
+*   **FastAPI**: A modern, fast (high-performance) web framework for building APIs with Python 3.7+ based on standard Python type hints.
+    *   **Why it's a good choice:** Offers excellent performance, automatic interactive API documentation (Swagger UI/ReDoc), and built-in data validation using Pydantic. Its asynchronous capabilities (`async/await`) make it highly efficient for I/O-bound tasks, aligning with the needs of a scalable API gateway.
+*   **Python**: A versatile, high-level, interpreted programming language.
+    *   **Why it's a good choice:** Known for its readability, extensive libraries, and large community. It's well-suited for backend development, scripting, and data processing, providing a productive environment for rapid development.
+
+### Database
+
+*   **SQLAlchemy**: A powerful and flexible SQL toolkit and Object Relational Mapper (ORM) for Python.
+    *   **Why it's a good choice:** Provides a robust and expressive way to interact with relational databases using Python objects, abstracting away raw SQL. It supports various database backends and offers both high-level ORM features and low-level SQL expression capabilities.
+*   **SQLite** (for local development): A self-contained, serverless, zero-configuration, transactional SQL database engine.
+    *   **Why it's a good choice:** Ideal for local development and testing due to its simplicity and file-based nature. It requires no separate server process, making setup and teardown quick and easy.
+*   **PostgreSQL** (for cloud deployment): A powerful, open-source object-relational database system.
+    *   **Why it's a good choice:** Renowned for its strong reliability, feature robustness, and performance. It's highly scalable and supports complex queries and data types, making it an excellent choice for production cloud deployments where data integrity and performance are critical.
+
 ## Getting Started
 
 1.  **Clone the Repository:**
