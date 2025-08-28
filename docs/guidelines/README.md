@@ -20,7 +20,7 @@ All pull requests must be reviewed and approved by at least one other developer 
 
 ## Pre-commit Hooks Setup
 
-OpalSuite utilizes the `pre-commit` framework to enforce code quality, style, and architectural standards across all modules. Global checks are defined in the `opal-dev-tools` repository, and each project's `.pre-commit-config.yaml` references these global hooks.
+OpalSuite utilizes the `pre-commit` framework to enforce code quality, style, and architectural standards across all modules. Global checks are defined in the `opal-dev-tools` repository within its `.pre-commit-hooks.yaml` file. Each project's `.pre-commit-config.yaml` references these global hooks.
 
 ### Installation
 
@@ -46,7 +46,7 @@ pre-commit run --all-files
 
 ### Updating Hooks
 
-To update the pre-commit hooks to their latest versions (as defined in `opal-dev-tools`):
+To update the pre-commit hooks to their latest versions (as defined by the commit hash in `opal-dev-tools`):
 
 ```bash
 pre-commit autoupdate
@@ -54,39 +54,46 @@ pre-commit autoupdate
 
 ### Overriding or Customizing Hooks
 
-Each project's `.pre-commit-config.yaml` includes all global hooks from `opal-dev-tools`. If you need to override or customize a specific hook for a particular project, you can do so by redefining the hook in the project's `.pre-commit-config.yaml` *after* the `opal-dev-tools` repository definition.
+Each project's `.pre-commit-config.yaml` includes all global hooks from `opal-dev-tools`. If you need to override or customize a specific hook for a particular project, you can do so by defining additional hooks in the project's `.pre-commit-config.yaml` using `repo: local`.
 
-**Example: Disabling a specific hook (e.g., `mypy`) for a project:**
+**Example: Project's `.pre-commit-config.yaml` referencing `opal-dev-tools`:**
 
 ```yaml
 repos:
   - repo: https://github.com/stephendavid77/opal-dev-tools
-    rev: main # Or a specific commit hash/tag
+    rev: 4aef5433195fa4c3fc91d91c996a63b54560103d # Use a specific commit hash for production stability
     hooks:
       - id: trailing-whitespace
-      # ... other global hooks ...
-      - id: mypy # This hook is included from opal-dev-tools
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: black
+      - id: isort
+      - id: flake8
+      - id: mypy
+      - id: bandit
+      - id: eslint
+      - id: prettier
+      - id: check-dependencies
+      - id: check-imports
+      - id: check-structure
+      - id: pytest
 
-  # Project-specific overrides
+  # Project-specific overrides or additions (using repo: local)
   - repo: local
     hooks:
-      - id: mypy # Redefine mypy to disable it for this project
-        enabled: false
+      - id: mypy # Example: Override mypy to skip it for this project
+        name: Mypy Type Checker (Project Override)
+        entry: mypy
+        language: python
+        enabled: false # Disable this hook for this project
 ```
 
-**Example: Adding a project-specific hook:**
+### How to Add a New Module to the Ecosystem
 
-```yaml
-repos:
-  - repo: https://github.com/stephendavid77/opal-dev-tools
-    rev: main # Or a specific commit hash/tag
-    hooks:
-      - id: trailing-whitespace
-      # ... other global hooks ...
+When adding a new module to the OpalSuite ecosystem, follow these steps to integrate it with the pre-commit framework:
 
-  # Project-specific additions
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
-    hooks:
-      - id: check-json # Example: Add a JSON check only for this project
-```
+1.  **Create the new module's repository.**
+2.  **Add a `.pre-commit-config.yaml` file** to the root of the new module's repository with the content shown in the "Example: Project's `.pre-commit-config.yaml`" above. Ensure you use the latest stable commit hash for `opal-dev-tools`.
+3.  **Run `pre-commit install`** in the new module's root directory.
+4.  **Run `pre-commit run --all-files`** to validate existing code in the new module.
