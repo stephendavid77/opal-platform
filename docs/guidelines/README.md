@@ -17,3 +17,76 @@ Branch names should be descriptive and follow the format `<type>/<short-descript
 ## Code Review Process
 
 All pull requests must be reviewed and approved by at least one other developer before being merged. The reviewer should check for code quality, correctness, and adherence to the guidelines.
+
+## Pre-commit Hooks Setup
+
+OpalSuite utilizes the `pre-commit` framework to enforce code quality, style, and architectural standards across all modules. Global checks are defined in the `opal-dev-tools` repository, and each project's `.pre-commit-config.yaml` references these global hooks.
+
+### Installation
+
+To set up the pre-commit hooks for any module in the OpalSuite ecosystem:
+
+1.  **Navigate to the module's root directory:**
+    ```bash
+    cd /path/to/your/module
+    ```
+2.  **Install the pre-commit hooks:**
+    ```bash
+    pre-commit install
+    ```
+    This command sets up the Git hooks in your local repository. The first time you commit after installation, `pre-commit` will download and install the necessary tools.
+
+### Validating Existing Code
+
+To run all configured hooks against all files in your repository (useful for validating existing code or after updating hook configurations):
+
+```bash
+pre-commit run --all-files
+```
+
+### Updating Hooks
+
+To update the pre-commit hooks to their latest versions (as defined in `opal-dev-tools`):
+
+```bash
+pre-commit autoupdate
+```
+
+### Overriding or Customizing Hooks
+
+Each project's `.pre-commit-config.yaml` includes all global hooks from `opal-dev-tools`. If you need to override or customize a specific hook for a particular project, you can do so by redefining the hook in the project's `.pre-commit-config.yaml` *after* the `opal-dev-tools` repository definition.
+
+**Example: Disabling a specific hook (e.g., `mypy`) for a project:**
+
+```yaml
+repos:
+  - repo: https://github.com/stephendavid77/opal-dev-tools
+    rev: main # Or a specific commit hash/tag
+    hooks:
+      - id: trailing-whitespace
+      # ... other global hooks ...
+      - id: mypy # This hook is included from opal-dev-tools
+
+  # Project-specific overrides
+  - repo: local
+    hooks:
+      - id: mypy # Redefine mypy to disable it for this project
+        enabled: false
+```
+
+**Example: Adding a project-specific hook:**
+
+```yaml
+repos:
+  - repo: https://github.com/stephendavid77/opal-dev-tools
+    rev: main # Or a specific commit hash/tag
+    hooks:
+      - id: trailing-whitespace
+      # ... other global hooks ...
+
+  # Project-specific additions
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: check-json # Example: Add a JSON check only for this project
+```
